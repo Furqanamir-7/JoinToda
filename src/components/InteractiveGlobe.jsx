@@ -105,32 +105,48 @@ export default function InteractiveGlobe() {
   }, []);
 
   const hubData = useMemo(() => globePins.map((p) => ({ ...p })), []);
+
+  // WebGL label font (helvetiker) can't draw ó/ñ — those become "?".
+  // Keep WebGL labels for other countries; Spain uses an HTML label instead.
   const labels = useMemo(
     () =>
-      globePins.flatMap((p) => {
-        if (p.id === 'spain') {
-          // Two-line label with correct Spanish accents (ó, ñ)
-          return [
-            {
-              ...p,
-              id: 'spain-label-1',
-              text: p.labelLine1 || 'Asociación de Propietarios y Conductores',
-              lat: p.lat + 1.15,
-              lng: p.lng,
-            },
-            {
-              ...p,
-              id: 'spain-label-2',
-              text: p.labelLine2 || 'de Camión de España',
-              lat: p.lat - 0.35,
-              lng: p.lng,
-            },
-          ];
-        }
-        return [{ ...p, text: p.name }];
-      }),
+      globePins
+        .filter((p) => p.id !== 'spain')
+        .map((p) => ({ ...p, text: p.name })),
     []
   );
+
+  const spainLabelData = useMemo(() => {
+    const spain = globePins.find((p) => p.id === 'spain');
+    return spain ? [{ ...spain }] : [];
+  }, []);
+
+  const makeSpainLabelEl = useCallback(() => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = [
+      'transform: translate(-50%, 0)',
+      'text-align: center',
+      'pointer-events: none',
+      'user-select: none',
+      'white-space: nowrap',
+      "font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif",
+      'font-weight: 700',
+      'font-size: 13px',
+      'line-height: 1.25',
+      'color: #fbbf24',
+      'text-shadow: 0 1px 3px rgba(0,0,0,0.85), 0 0 8px rgba(0,0,0,0.55)',
+    ].join(';');
+
+    const line1 = document.createElement('div');
+    line1.textContent = 'Asociación de Propietarios y Conductores';
+
+    const line2 = document.createElement('div');
+    line2.textContent = 'de Camión de España';
+
+    wrap.appendChild(line1);
+    wrap.appendChild(line2);
+    return wrap;
+  }, []);
 
   const arcs = useMemo(() => {
     const hubs = ['usa', 'spain', 'china', 'australia', 'saudi', 'kenya'];
@@ -173,16 +189,21 @@ export default function InteractiveGlobe() {
         objectThreeObject={createPushpinObject}
         onObjectClick={handlePinClick}
         onObjectHover={handlePinHover}
+        htmlElementsData={spainLabelData}
+        htmlLat="lat"
+        htmlLng="lng"
+        htmlAltitude={0.09}
+        htmlElement={makeSpainLabelEl}
         labelsData={labels}
         labelLat="lat"
         labelLng="lng"
         labelText="text"
-        labelSize={(d) => (d.id?.startsWith('spain') ? 1.25 : 1.2)}
+        labelSize={1.2}
         labelDotRadius={0}
         labelIncludeDot={false}
-        labelColor={(d) => (d.id?.startsWith('spain') ? '#fbbf24' : '#ffffff')}
-        labelAltitude={(d) => (d.id?.startsWith('spain') ? 0.08 : 0.025)}
-        labelResolution={3}
+        labelColor={() => '#ffffff'}
+        labelAltitude={0.025}
+        labelResolution={2}
         arcsData={arcs}
         arcColor="color"
         arcStroke="stroke"
