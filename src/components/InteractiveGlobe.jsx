@@ -1,31 +1,33 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Globe from 'react-globe.gl';
 import { FiPlus, FiMinus, FiArrowRight } from 'react-icons/fi';
 import { globePins, chapterUrlForPin } from '../data/networkData';
-import { createPushpinObject } from '../utils/createPushpinObject';
+import { createPinElement } from '../utils/createPinElement';
 
-/**
- * Full-page interactive rotating 3D globe with map pushpins and labels.
- */
 const MIN_ALTITUDE = 0.6;
 const MAX_ALTITUDE = 4;
 const ZOOM_STEP = 0.6;
+
+function initialSize() {
+  if (typeof window === 'undefined') return { width: 800, height: 600 };
+  return { width: window.innerWidth, height: window.innerHeight };
+}
 
 export default function InteractiveGlobe() {
   const globeRef = useRef(null);
   const wrapperRef = useRef(null);
   const hoveredPinRef = useRef(null);
   const hintTimerRef = useRef(null);
-  const [size, setSize] = useState({ width: 1, height: 1 });
+  const [size, setSize] = useState(initialSize);
   const [hint, setHint] = useState(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const update = () => {
       if (!wrapperRef.current) return;
-      setSize({
-        width: wrapperRef.current.clientWidth,
-        height: wrapperRef.current.clientHeight,
-      });
+      const width = wrapperRef.current.clientWidth || window.innerWidth;
+      const height = wrapperRef.current.clientHeight || window.innerHeight;
+      if (width > 0 && height > 0) setSize({ width, height });
     };
     update();
     const ro = new ResizeObserver(update);
@@ -38,26 +40,41 @@ export default function InteractiveGlobe() {
   }, []);
 
   useEffect(() => {
-    if (!globeRef.current) return;
-    const controls = globeRef.current.controls();
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.5;
-    controls.enableZoom = true;
-    controls.enablePan = false;
-    controls.rotateSpeed = 0.8;
-    controls.minDistance = 110;
-    controls.maxDistance = 600;
-    const isMobile = window.innerWidth < 640;
-    globeRef.current.pointOfView(
-      { lat: 25, lng: -30, altitude: isMobile ? 2.6 : 2.0 },
-      0
-    );
-  }, []);
-
-  useEffect(() => {
     return () => {
       if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
     };
+  }, []);
+
+  const handleGlobeReady = useCallback(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+
+    try {
+      const controls = globe.controls();
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.45;
+      controls.enableZoom = true;
+      controls.enablePan = false;
+      controls.rotateSpeed = 0.8;
+      controls.minDistance = 110;
+      controls.maxDistance = 600;
+    } catch {
+      /* controls may not exist yet */
+    }
+
+    try {
+      const mat = globe.globeMaterial?.();
+      if (mat?.color?.set) mat.color.set('#ffffff');
+      if (mat) {
+        mat.emissiveIntensity = 0;
+      }
+    } catch {
+      /* ignore material tweaks */
+    }
+
+    const isMobile = window.innerWidth < 640;
+    globe.pointOfView({ lat: 25, lng: -10, altitude: isMobile ? 2.6 : 2.0 }, 0);
+    setReady(true);
   }, []);
 
   const zoomBy = (delta) => {
@@ -70,32 +87,25 @@ export default function InteractiveGlobe() {
     globeRef.current.pointOfView({ ...pov, altitude }, 350);
   };
 
-  const handlePinHover = (pin) => {
+  const handlePinHover = useCallback((pin) => {
     hoveredPinRef.current = pin || null;
     if (!globeRef.current) return;
-    globeRef.current.controls().autoRotate = !pin;
+    try {
+      globeRef.current.controls().autoRotate = !pin;
+    } catch {
+      /* ignore */
+    }
     if (wrapperRef.current) {
       wrapperRef.current.style.cursor = pin ? 'pointer' : 'grab';
     }
-  };
+  }, []);
 
-  const handlePinClick = (pin) => {
+  const handlePinClick = useCallback((pin) => {
     if (!pin) return;
     setHint(pin);
     if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
     hintTimerRef.current = setTimeout(() => setHint(null), 3500);
-  };
-
-  const openChapter = (pin) => {
-    if (!pin) return;
-    setHint(null);
-    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-    window.open(chapterUrlForPin(pin.id), '_blank', 'noopener,noreferrer');
-  };
-
-  const handleDoubleClick = () => {
-    if (hoveredPinRef.current) openChapter(hoveredPinRef.current);
-  };
+  }, []);
 
   const hubData = useMemo(() => globePins.map((p) => ({ ...p })), []);
 
@@ -104,53 +114,65 @@ export default function InteractiveGlobe() {
       globePins.map((p) => ({
         ...p,
         text: p.name,
-        lat: p.lat + (p.labelLatOffset || 0),
-        lng: p.lng + (p.labelLngOffset || 0),
       })),
     []
   );
 
+  // Sparse arcs only (hub spokes) so WebGL stays healthy with many countries.
   const arcs = useMemo(() => {
+    const hubs = ['usa', 'spain', 'china', 'australia', 'saudi', 'kenya'];
+    const hubPins = globePins.filter((p) => hubs.includes(p.id));
     const out = [];
     const arcColor = [
       'rgba(96,165,250,0)',
-      'rgba(96,165,250,0.85)',
+      'rgba(96,165,250,0.7)',
       'rgba(96,165,250,0)',
     ];
-    for (let i = 0; i < globePins.length; i++) {
-      for (let j = i + 1; j < globePins.length; j++) {
+    for (let i = 0; i < hubPins.length; i++) {
+      for (let j = i + 1; j < hubPins.length; j++) {
         out.push({
-          startLat: globePins[i].lat,
-          startLng: globePins[i].lng,
-          endLat: globePins[j].lat,
-          endLng: globePins[j].lng,
+          startLat: hubPins[i].lat,
+          startLng: hubPins[i].lng,
+          endLat: hubPins[j].lat,
+          endLng: hubPins[j].lng,
           color: arcColor,
-          stroke: 0.35,
+          stroke: 0.3,
         });
       }
     }
     return out;
   }, []);
 
-  const rings = useMemo(
-    () =>
-      globePins.map((p) => ({
-        lat: p.lat,
-        lng: p.lng,
-        maxR: 7,
-        propagationSpeed: 3.5,
-        repeatPeriod: 1400,
-        color: p.color,
-      })),
-    []
+  const makePinEl = useCallback(
+    (pin) => {
+      const el = createPinElement(pin);
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handlePinClick(pin);
+      });
+      el.addEventListener('mouseenter', () => handlePinHover(pin));
+      el.addEventListener('mouseleave', () => handlePinHover(null));
+      el.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        window.open(chapterUrlForPin(pin.id), '_blank', 'noopener,noreferrer');
+      });
+      return el;
+    },
+    [handlePinClick, handlePinHover]
   );
 
   return (
     <div
       ref={wrapperRef}
-      onDoubleClick={handleDoubleClick}
       className="relative w-full h-full overflow-hidden bg-black"
+      style={{ minHeight: '100vh', minWidth: '100vw' }}
     >
+      {!ready && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black pointer-events-none">
+          <div className="text-neutral-400 text-sm tracking-wide">Loading globe…</div>
+        </div>
+      )}
+
       <Globe
         ref={globeRef}
         width={size.width}
@@ -162,23 +184,21 @@ export default function InteractiveGlobe() {
         atmosphereAltitude={0.22}
         globeImageUrl="/textures/earth-blue-marble.jpg"
         bumpImageUrl="/textures/earth-topology.png"
-        objectsData={hubData}
-        objectLat="lat"
-        objectLng="lng"
-        objectAltitude={0.002}
-        objectFacesSurfaces
-        objectThreeObject={createPushpinObject}
-        onObjectClick={handlePinClick}
-        onObjectHover={handlePinHover}
+        onGlobeReady={handleGlobeReady}
+        htmlElementsData={hubData}
+        htmlLat="lat"
+        htmlLng="lng"
+        htmlAltitude={0.012}
+        htmlElement={makePinEl}
         labelsData={labels}
         labelLat="lat"
         labelLng="lng"
         labelText="text"
-        labelSize={1.5}
+        labelSize={1.15}
         labelDotRadius={0}
         labelIncludeDot={false}
-        labelColor={() => '#ffffff'}
-        labelAltitude={0.028}
+        labelColor={() => 'rgba(255,255,255,0.92)'}
+        labelAltitude={0.02}
         labelResolution={2}
         arcsData={arcs}
         arcColor="color"
@@ -187,11 +207,6 @@ export default function InteractiveGlobe() {
         arcDashGap={1.5}
         arcDashAnimateTime={4500}
         arcAltitudeAutoScale={0.38}
-        ringsData={rings}
-        ringColor={(r) => () => r.color}
-        ringMaxRadius="maxR"
-        ringPropagationSpeed="propagationSpeed"
-        ringRepeatPeriod="repeatPeriod"
       />
 
       {hint && (
@@ -201,7 +216,7 @@ export default function InteractiveGlobe() {
               {hint.code} · {hint.region}
             </div>
             <div className="font-display font-bold text-white text-base sm:text-lg mt-1" dir="auto">
-              {hint.name}
+              {hint.fullName || hint.name}
             </div>
             <a
               href={chapterUrlForPin(hint.id)}
