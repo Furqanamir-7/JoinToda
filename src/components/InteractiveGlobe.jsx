@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Globe from 'react-globe.gl';
-import { FiPlus, FiMinus, FiArrowRight } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiArrowRight, FiX } from 'react-icons/fi';
 import { globePins, chapterUrlForPin } from '../data/networkData';
 import { createPushpinObject } from '../utils/createPushpinObject';
 
@@ -13,21 +13,22 @@ function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth < 768;
 }
 
-function makeChapterLabelEl(pin, mobile) {
+/** Desktop-only floating labels (mobile uses tap → bottom card to avoid clutter). */
+function makeChapterLabelEl(pin) {
   const wrap = document.createElement('div');
   wrap.style.cssText = [
-    'transform: translate(-50%, 6px)',
+    'transform: translate(-50%, 8px)',
     'text-align: center',
     'pointer-events: none',
     'user-select: none',
-    `-webkit-user-select: none`,
-    `max-width: ${mobile ? '140px' : '200px'}`,
+    '-webkit-user-select: none',
+    'max-width: 190px',
     "font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif",
     'font-weight: 600',
-    `font-size: ${mobile ? '9px' : '11px'}`,
+    'font-size: 11px',
     'line-height: 1.2',
     `color: ${LABEL_COLOR}`,
-    'text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7)',
+    'text-shadow: 0 1px 3px rgba(0,0,0,0.95), 0 0 8px rgba(0,0,0,0.75)',
   ].join(';');
 
   if (pin.rtl) {
@@ -40,9 +41,7 @@ function makeChapterLabelEl(pin, mobile) {
   lines.forEach((text) => {
     const row = document.createElement('div');
     row.textContent = text;
-    row.style.whiteSpace = 'nowrap';
-    row.style.overflow = 'hidden';
-    row.style.textOverflow = 'ellipsis';
+    row.style.whiteSpace = 'normal';
     wrap.appendChild(row);
   });
 
@@ -67,7 +66,10 @@ export default function InteractiveGlobe() {
     const update = () => {
       const w = Math.max(el.clientWidth || window.innerWidth, 320);
       const h = Math.max(
-        el.clientHeight || window.innerHeight || window.visualViewport?.height || 0,
+        el.clientHeight ||
+          window.visualViewport?.height ||
+          window.innerHeight ||
+          0,
         320
       );
       setSize({ width: w, height: h });
@@ -99,13 +101,13 @@ export default function InteractiveGlobe() {
     try {
       const controls = globe.controls();
       controls.autoRotate = true;
-      controls.autoRotateSpeed = mobile ? 0.35 : 0.4;
+      controls.autoRotateSpeed = mobile ? 0.3 : 0.4;
       controls.enableZoom = true;
       controls.enablePan = false;
       controls.enableDamping = true;
       controls.dampingFactor = 0.08;
-      controls.rotateSpeed = mobile ? 0.55 : 0.8;
-      controls.minDistance = mobile ? 140 : 120;
+      controls.rotateSpeed = mobile ? 0.5 : 0.75;
+      controls.minDistance = mobile ? 150 : 120;
       controls.maxDistance = 520;
     } catch {
       /* ignore */
@@ -118,8 +120,9 @@ export default function InteractiveGlobe() {
       /* ignore */
     }
 
+    // Start more zoomed-out on phones so pins aren't piled up
     globe.pointOfView(
-      { lat: 18, lng: -15, altitude: mobile ? 2.85 : 2.25 },
+      { lat: 15, lng: -20, altitude: mobile ? 3.15 : 2.3 },
       0
     );
   }, [mobile]);
@@ -136,6 +139,7 @@ export default function InteractiveGlobe() {
   };
 
   const handlePinHover = useCallback((pin) => {
+    if (isMobileViewport()) return;
     const globe = globeRef.current;
     if (!globe) return;
     try {
@@ -143,7 +147,7 @@ export default function InteractiveGlobe() {
     } catch {
       /* ignore */
     }
-    if (wrapperRef.current && !isMobileViewport()) {
+    if (wrapperRef.current) {
       wrapperRef.current.style.cursor = pin ? 'pointer' : 'grab';
     }
   }, []);
@@ -152,7 +156,27 @@ export default function InteractiveGlobe() {
     if (!pin) return;
     setHint(pin);
     if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-    hintTimerRef.current = setTimeout(() => setHint(null), 4500);
+    // Keep card open longer on mobile; user can dismiss
+    const ms = isMobileViewport() ? 8000 : 4500;
+    hintTimerRef.current = setTimeout(() => setHint(null), ms);
+
+    // Fly a bit closer to the tapped pin on mobile for clarity
+    const globe = globeRef.current;
+    if (globe && isMobileViewport()) {
+      try {
+        globe.pointOfView(
+          { lat: pin.lat, lng: pin.lng, altitude: 1.85 },
+          700
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  const clearHint = useCallback(() => {
+    setHint(null);
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
   }, []);
 
   const hubData = useMemo(
@@ -160,17 +184,27 @@ export default function InteractiveGlobe() {
     [mobile]
   );
 
-  const htmlData = useMemo(() => globePins.map((p) => ({ ...p })), []);
+  // Mobile: no floating labels (they overlap). Desktop: all labels except the open card's pin.
+  const htmlData = useMemo(() => {
+    if (mobile) return [];
+    return globePins
+      .filter((p) => !hint || p.id !== hint.id)
+      .map((p) => ({ ...p }));
+  }, [mobile, hint]);
 
-  const makeLabelEl = useCallback(
-    (pin) => makeChapterLabelEl(pin, mobile),
-    [mobile]
-  );
+  const makeLabelEl = useCallback((pin) => makeChapterLabelEl(pin), []);
 
   const arcs = useMemo(() => {
-    const hubs = ['toda', 'europe', 'china', 'australasia', 'arabia', 'africa', 'brazil'];
+    // Fewer arcs on mobile to reduce visual noise
+    const hubs = mobile
+      ? ['toda', 'europe', 'china', 'australasia']
+      : ['toda', 'europe', 'china', 'australasia', 'arabia', 'africa', 'brazil'];
     const hubPins = globePins.filter((p) => hubs.includes(p.id));
-    const color = ['rgba(96,165,250,0)', 'rgba(96,165,250,0.35)', 'rgba(96,165,250,0)'];
+    const color = [
+      'rgba(96,165,250,0)',
+      'rgba(96,165,250,0.3)',
+      'rgba(96,165,250,0)',
+    ];
     const out = [];
     for (let i = 0; i < hubPins.length; i++) {
       for (let j = i + 1; j < hubPins.length; j++) {
@@ -180,12 +214,12 @@ export default function InteractiveGlobe() {
           endLat: hubPins[j].lat,
           endLng: hubPins[j].lng,
           color,
-          stroke: 0.18,
+          stroke: 0.16,
         });
       }
     }
     return out;
-  }, []);
+  }, [mobile]);
 
   return (
     <div
@@ -215,7 +249,7 @@ export default function InteractiveGlobe() {
         htmlElementsData={htmlData}
         htmlLat="lat"
         htmlLng="lng"
-        htmlAltitude={mobile ? 0.055 : 0.065}
+        htmlAltitude={0.06}
         htmlElement={makeLabelEl}
         arcsData={arcs}
         arcColor="color"
@@ -226,14 +260,33 @@ export default function InteractiveGlobe() {
         arcAltitudeAutoScale={0.32}
       />
 
+      {mobile && !hint && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none px-3 w-full max-w-sm">
+          <div
+            className="text-center text-[11px] font-medium rounded-full px-3 py-1.5 bg-black/55 backdrop-blur-sm border border-white/10"
+            style={{ color: LABEL_COLOR }}
+          >
+            Tap a pin for the chapter name
+          </div>
+        </div>
+      )}
+
       {hint && (
-        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-1.5rem)] max-w-md pb-[env(safe-area-inset-bottom)]">
-          <div className="bg-[#0E0E0E]/95 backdrop-blur-xl border border-sky-500/40 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-center">
-            <div className="text-[10px] font-mono tracking-[0.25em] text-sky-400 uppercase">
+        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1.25rem)] max-w-md pb-[env(safe-area-inset-bottom)]">
+          <div className="relative bg-[#0E0E0E]/96 backdrop-blur-xl border border-white/15 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 shadow-[0_8px_32px_rgba(0,0,0,0.65)] text-center">
+            <button
+              type="button"
+              onClick={clearHint}
+              aria-label="Close"
+              className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/10 text-white/80 flex items-center justify-center"
+            >
+              <FiX size={16} />
+            </button>
+            <div className="text-[10px] font-mono tracking-[0.22em] text-sky-400 uppercase pr-6">
               {hint.code} · {hint.region}
             </div>
             <div
-              className="font-display font-bold text-sm sm:text-base mt-1"
+              className="font-display font-bold text-[13px] sm:text-base mt-1.5 leading-snug px-2"
               style={{ color: LABEL_COLOR }}
               dir={hint.rtl ? 'rtl' : 'auto'}
             >
@@ -251,12 +304,12 @@ export default function InteractiveGlobe() {
         </div>
       )}
 
-      <div className="absolute top-1/2 -translate-y-1/2 right-3 sm:right-6 flex flex-col gap-2 z-10 pt-[env(safe-area-inset-top)]">
+      <div className="absolute top-1/2 -translate-y-1/2 right-3 sm:right-6 flex flex-col gap-2 z-10">
         <button
           type="button"
           onClick={() => zoomBy(-ZOOM_STEP)}
           aria-label="Zoom in"
-          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 border border-white/20 text-white flex items-center justify-center"
+          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 active:bg-white/30 border border-white/20 text-white flex items-center justify-center"
         >
           <FiPlus size={20} />
         </button>
@@ -264,7 +317,7 @@ export default function InteractiveGlobe() {
           type="button"
           onClick={() => zoomBy(ZOOM_STEP)}
           aria-label="Zoom out"
-          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 border border-white/20 text-white flex items-center justify-center"
+          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 active:bg-white/30 border border-white/20 text-white flex items-center justify-center"
         >
           <FiMinus size={20} />
         </button>
