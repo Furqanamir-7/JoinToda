@@ -33,48 +33,27 @@ function buildRedPin() {
 }
 
 /**
- * Spain: large camera-facing sprites so the pin + association logo stay readable.
- * Other countries: simple red pushpins.
+ * Custom Spain marker: ONE camera-facing pin sprite
+ * (black map pin with the association logo only in the circular hole).
  */
 export function createPushpinObject(pin) {
   if (pin?.id === 'spain') {
     const group = new THREE.Group();
 
-    const pinMap = getTexture('/pins/spain-pin.png');
-    const logoMap = getTexture('/pins/spain-logo.jpg');
-
-    // Composited location-pin with logo in the circle
-    const pinSprite = new THREE.Sprite(
+    const map = getTexture('/pins/spain-pin.png');
+    const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        map: pinMap,
+        map,
         transparent: true,
         depthTest: true,
         sizeAttenuation: true,
       })
     );
-    pinSprite.scale.set(10, 14.7, 1);
-    pinSprite.position.y = 7;
-    group.add(pinSprite);
-
-    // Clear circular logo badge above the pin (easy to spot when zoomed out)
-    const logoSprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: logoMap,
-        transparent: true,
-        depthTest: true,
-        sizeAttenuation: true,
-      })
-    );
-    logoSprite.scale.set(6, 6, 1);
-    logoSprite.position.y = 16;
-    group.add(logoSprite);
-
-    // Surface anchor so the marker sits on Spain
-    const anchor = new THREE.Mesh(
-      new THREE.SphereGeometry(0.4, 12, 12),
-      new THREE.MeshBasicMaterial({ color: 0xef4444 })
-    );
-    group.add(anchor);
+    // Pin art is ~136×200 — keep aspect, size readable on the globe
+    sprite.scale.set(8, 11.8, 1);
+    sprite.center.set(0.5, 0);
+    sprite.position.y = 0.2;
+    group.add(sprite);
 
     return group;
   }
