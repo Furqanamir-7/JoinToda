@@ -2,6 +2,15 @@ import * as THREE from 'three';
 
 const HEAD_RADIUS = 1.15;
 const STEM_DEPTH = 4.2;
+const textureCache = new Map();
+
+function getLogoTexture(url) {
+  if (textureCache.has(url)) return textureCache.get(url);
+  const tex = new THREE.TextureLoader().load(url);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  textureCache.set(url, tex);
+  return tex;
+}
 
 function buildPin(headMaterial) {
   const group = new THREE.Group();
@@ -23,35 +32,12 @@ function buildPin(headMaterial) {
   return group;
 }
 
-/**
- * BasicMaterials so pins stay visible even if scene lighting is off.
- * Spain pin head uses the association logo texture.
- */
+/** Pushpin markers — Spain uses the chapter logo on the head. */
 export function createPushpinObject(pin) {
-  const isSpain = pin?.id === 'spain';
-
-  if (!isSpain) {
-    return buildPin(
-      new THREE.MeshBasicMaterial({ color: 0xef4444 })
-    );
+  if (pin?.id === 'spain') {
+    const map = getLogoTexture(pin.pinImageUrl || '/pins/spain-logo.jpg');
+    return buildPin(new THREE.MeshBasicMaterial({ map }));
   }
 
-  const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const group = buildPin(material);
-
-  const loader = new THREE.TextureLoader();
-  loader.load(
-    pin.pinImageUrl || '/pins/spain-logo.jpg',
-    (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      material.map = tex;
-      material.needsUpdate = true;
-    },
-    undefined,
-    () => {
-      material.color.set(0xef4444);
-    }
-  );
-
-  return group;
+  return buildPin(new THREE.MeshBasicMaterial({ color: 0xef4444 }));
 }
