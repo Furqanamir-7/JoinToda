@@ -49,8 +49,8 @@ export function createPushpinObject(pin) {
         sizeAttenuation: true,
       })
     );
-    // Pin art is ~136×200 — keep aspect, size readable on the globe
-    sprite.scale.set(8, 11.8, 1);
+    // Custom pin art is square-ish (logo head + tip)
+    sprite.scale.set(9, 9, 1);
     sprite.center.set(0.5, 0);
     sprite.position.y = 0.2;
     group.add(sprite);

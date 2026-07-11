@@ -1,82 +1,68 @@
 const sharp = require('sharp');
-const fs = require('fs');
 const path = require('path');
 
+/**
+ * Custom Spain map pin — logo fills the circular head, tip below.
+ */
 async function main() {
-  const pinIn = path.join('public', 'pins', 'location-pin.webp');
   const logoIn = path.join('public', 'pins', 'spain-logo.jpg');
   const out = path.join('public', 'pins', 'spain-pin.png');
 
-  const { data, info } = await sharp(pinIn)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const size = 256;
+  const headR = 96;
+  const cx = size / 2;
+  const headCy = 108;
+  const tipY = 248;
 
-  const w = info.width;
-  const h = info.height;
+  // Tip + dark underlay circle (logo draws on top of the circle area)
+  const pinSvg = Buffer.from(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+      <defs>
+        <filter id="shadow" x="-25%" y="-15%" width="150%" height="150%">
+          <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.5"/>
+        </filter>
+      </defs>
+      <g filter="url(#shadow)">
+        <path
+          fill="#111111"
+          stroke="#ffffff"
+          stroke-width="5"
+          stroke-linejoin="round"
+          d="M ${cx - 34} ${headCy + 70}
+             L ${cx} ${tipY}
+             L ${cx + 34} ${headCy + 70}
+             Z"
+        />
+        <circle cx="${cx}" cy="${headCy}" r="${headR}" fill="#111111" stroke="#ffffff" stroke-width="5"/>
+      </g>
+    </svg>
+  `);
 
-  for (let i = 0; i < data.length; i += 4) {
-    const lum = (data[i] + data[i + 1] + data[i + 2]) / 3;
-    data[i + 3] = lum > 200 ? 0 : 255;
-  }
-
-  const pinBuf = await sharp(data, {
-    raw: { width: w, height: h, channels: 4 },
-  })
-    .png()
-    .toBuffer();
-
-  let minX = w;
-  let minY = h;
-  let maxX = 0;
-  let maxY = 0;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (data[(y * w + x) * 4 + 3] > 20) {
-        if (x < minX) minX = x;
-        if (y < minY) minY = y;
-        if (x > maxX) maxX = x;
-        if (y > maxY) maxY = y;
-      }
-    }
-  }
-
-  const pinW = maxX - minX + 1;
-  const cx = Math.round(minX + pinW / 2);
-  const cy = Math.round(minY + pinW * 0.38);
-  const holeR = Math.round(pinW * 0.22);
+  const holeR = headR - 8;
   const logoSize = holeR * 2;
-  const logoLeft = cx - holeR;
-  const logoTop = cy - holeR;
-
   const mask = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${logoSize}" height="${logoSize}"><circle cx="${holeR}" cy="${holeR}" r="${holeR}" fill="white"/></svg>`
   );
 
   const logo = await sharp(logoIn)
-    .resize(logoSize, logoSize)
+    .resize(logoSize, logoSize, { fit: 'cover', position: 'centre' })
     .composite([{ input: mask, blend: 'dest-in' }])
     .png()
     .toBuffer();
 
-  const full = await sharp({
-    create: {
-      width: w,
-      height: h,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    },
-  })
+  await sharp(pinSvg)
     .composite([
-      { input: logo, top: Math.max(0, logoTop), left: Math.max(0, logoLeft) },
-      { input: pinBuf, top: 0, left: 0 },
+      {
+        input: logo,
+        top: Math.round(headCy - holeR),
+        left: Math.round(cx - holeR),
+      },
     ])
     .png()
-    .toBuffer();
+    .toFile(out);
 
-  await sharp(full).trim().png().toFile(out);
   const meta = await sharp(out).metadata();
-  console.log('wrote', out, meta.width + 'x' + meta.height, fs.statSync(out).size);
+  console.log('custom spain-pin', `${meta.width}x${meta.height}`, 'logoR', holeR);
 }
 
 main().catch((err) => {
