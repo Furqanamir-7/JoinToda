@@ -8,6 +8,41 @@ const MIN_ALTITUDE = 0.6;
 const MAX_ALTITUDE = 4;
 const ZOOM_STEP = 0.6;
 
+function makeChapterLabelEl(pin) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = [
+    'transform: translate(-50%, 8px)',
+    'text-align: center',
+    'pointer-events: none',
+    'user-select: none',
+    'max-width: 220px',
+    "font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif",
+    'font-weight: 700',
+    'font-size: 11px',
+    'line-height: 1.25',
+    'color: #fbbf24',
+    'text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.6)',
+  ].join(';');
+
+  if (pin.rtl) {
+    wrap.dir = 'rtl';
+    wrap.style.fontFamily = "'Segoe UI', 'Noto Sans Arabic', 'Noto Sans Hebrew', Arial, sans-serif";
+  }
+
+  const lines = pin.labelLines?.length
+    ? pin.labelLines
+    : [pin.name];
+
+  lines.forEach((text) => {
+    const row = document.createElement('div');
+    row.textContent = text;
+    row.style.whiteSpace = 'nowrap';
+    wrap.appendChild(row);
+  });
+
+  return wrap;
+}
+
 export default function InteractiveGlobe() {
   const globeRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -52,7 +87,7 @@ export default function InteractiveGlobe() {
     try {
       const controls = globe.controls();
       controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.5;
+      controls.autoRotateSpeed = 0.4;
       controls.enableZoom = true;
       controls.enablePan = false;
       controls.minDistance = 120;
@@ -62,7 +97,6 @@ export default function InteractiveGlobe() {
     }
 
     try {
-      // Keep material color white so texture isn't multiplied to black.
       const mat = globe.globeMaterial();
       mat.color.setHex(0xffffff);
     } catch {
@@ -70,7 +104,7 @@ export default function InteractiveGlobe() {
     }
 
     const isMobile = window.innerWidth < 640;
-    globe.pointOfView({ lat: 20, lng: 10, altitude: isMobile ? 2.4 : 1.9 }, 0);
+    globe.pointOfView({ lat: 20, lng: -20, altitude: isMobile ? 2.6 : 2.1 }, 0);
   }, []);
 
   const zoomBy = (delta) => {
@@ -101,57 +135,20 @@ export default function InteractiveGlobe() {
     if (!pin) return;
     setHint(pin);
     if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-    hintTimerRef.current = setTimeout(() => setHint(null), 4000);
+    hintTimerRef.current = setTimeout(() => setHint(null), 4500);
   }, []);
 
   const hubData = useMemo(() => globePins.map((p) => ({ ...p })), []);
 
-  // WebGL label font (helvetiker) can't draw ó/ñ — those become "?".
-  // Keep WebGL labels for other countries; Spain uses an HTML label instead.
-  const labels = useMemo(
-    () =>
-      globePins
-        .filter((p) => p.id !== 'spain')
-        .map((p) => ({ ...p, text: p.name })),
-    []
-  );
+  // HTML labels for every chapter (supports accents, Arabic, Chinese, etc.)
+  const htmlData = useMemo(() => globePins.map((p) => ({ ...p })), []);
 
-  const spainLabelData = useMemo(() => {
-    const spain = globePins.find((p) => p.id === 'spain');
-    return spain ? [{ ...spain }] : [];
-  }, []);
-
-  const makeSpainLabelEl = useCallback(() => {
-    const wrap = document.createElement('div');
-    wrap.style.cssText = [
-      'transform: translate(-50%, 0)',
-      'text-align: center',
-      'pointer-events: none',
-      'user-select: none',
-      'white-space: nowrap',
-      "font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif",
-      'font-weight: 700',
-      'font-size: 13px',
-      'line-height: 1.25',
-      'color: #fbbf24',
-      'text-shadow: 0 1px 3px rgba(0,0,0,0.85), 0 0 8px rgba(0,0,0,0.55)',
-    ].join(';');
-
-    const line1 = document.createElement('div');
-    line1.textContent = 'Asociación de Propietarios y Conductores';
-
-    const line2 = document.createElement('div');
-    line2.textContent = 'de Camión de España';
-
-    wrap.appendChild(line1);
-    wrap.appendChild(line2);
-    return wrap;
-  }, []);
+  const makeLabelEl = useCallback((pin) => makeChapterLabelEl(pin), []);
 
   const arcs = useMemo(() => {
-    const hubs = ['usa', 'spain', 'china', 'australia', 'saudi', 'kenya'];
+    const hubs = ['toda', 'europe', 'china', 'australasia', 'arabia', 'africa', 'brazil'];
     const hubPins = globePins.filter((p) => hubs.includes(p.id));
-    const color = ['rgba(96,165,250,0)', 'rgba(96,165,250,0.55)', 'rgba(96,165,250,0)'];
+    const color = ['rgba(96,165,250,0)', 'rgba(96,165,250,0.45)', 'rgba(96,165,250,0)'];
     const out = [];
     for (let i = 0; i < hubPins.length; i++) {
       for (let j = i + 1; j < hubPins.length; j++) {
@@ -161,7 +158,7 @@ export default function InteractiveGlobe() {
           endLat: hubPins[j].lat,
           endLng: hubPins[j].lng,
           color,
-          stroke: 0.28,
+          stroke: 0.22,
         });
       }
     }
@@ -184,26 +181,16 @@ export default function InteractiveGlobe() {
         objectsData={hubData}
         objectLat="lat"
         objectLng="lng"
-        objectAltitude={(d) => (d.id === 'spain' ? 0.04 : 0.012)}
+        objectAltitude={0.025}
         objectFacesSurfaces
         objectThreeObject={createPushpinObject}
         onObjectClick={handlePinClick}
         onObjectHover={handlePinHover}
-        htmlElementsData={spainLabelData}
+        htmlElementsData={htmlData}
         htmlLat="lat"
         htmlLng="lng"
-        htmlAltitude={0.09}
-        htmlElement={makeSpainLabelEl}
-        labelsData={labels}
-        labelLat="lat"
-        labelLng="lng"
-        labelText="text"
-        labelSize={1.2}
-        labelDotRadius={0}
-        labelIncludeDot={false}
-        labelColor={() => '#ffffff'}
-        labelAltitude={0.025}
-        labelResolution={2}
+        htmlAltitude={0.07}
+        htmlElement={makeLabelEl}
         arcsData={arcs}
         arcColor="color"
         arcStroke="stroke"
@@ -214,13 +201,16 @@ export default function InteractiveGlobe() {
       />
 
       {hint && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] max-w-sm pb-[env(safe-area-inset-bottom)]">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] max-w-md pb-[env(safe-area-inset-bottom)]">
           <div className="bg-[#0E0E0E]/95 backdrop-blur-xl border border-sky-500/40 rounded-2xl px-5 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-center">
             <div className="text-[10px] font-mono tracking-[0.25em] text-sky-400 uppercase">
               {hint.code} · {hint.region}
             </div>
-            <div className="font-display font-bold text-white text-base sm:text-lg mt-1" dir="auto">
-              {hint.fullName || hint.name}
+            <div
+              className="font-display font-bold text-white text-sm sm:text-base mt-1"
+              dir={hint.rtl ? 'rtl' : 'auto'}
+            >
+              {hint.name}
             </div>
             <a
               href={chapterUrlForPin(hint.id)}
