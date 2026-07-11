@@ -10,11 +10,13 @@ function getTexture(url) {
   return tex;
 }
 
-/** Custom map pin sprite with each chapter's unique logo in the circular head. */
+/** Custom map pin sprite — smaller on mobile to reduce clutter. */
 export function createPushpinObject(pin) {
   const group = new THREE.Group();
   const url = pin?.pinImageUrl || '/pins/toda-pin.png';
   const map = getTexture(url);
+  const mobile = Boolean(pin?.__mobile);
+  const scale = mobile ? 5.2 : 6.4;
 
   const sprite = new THREE.Sprite(
     new THREE.SpriteMaterial({
@@ -24,9 +26,9 @@ export function createPushpinObject(pin) {
       sizeAttenuation: true,
     })
   );
-  sprite.scale.set(7.5, 7.5, 1);
+  sprite.scale.set(scale, scale, 1);
   sprite.center.set(0.5, 0);
-  sprite.position.y = 0.15;
+  sprite.position.y = 0.12;
   group.add(sprite);
 
   return group;
