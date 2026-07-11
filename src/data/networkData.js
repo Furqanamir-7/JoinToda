@@ -129,7 +129,7 @@ export const globePins = [
     region: 'Europe',
     color: '#EF4444',
     logoUrl: '/pins/spain-logo.jpg',
-    pinImageUrl: '/pins/spain-logo.jpg',
+    pinImageUrl: '/pins/spain-pin.png',
   },
   {
     id: 'france',

@@ -146,7 +146,7 @@ export default function InteractiveGlobe() {
         objectsData={hubData}
         objectLat="lat"
         objectLng="lng"
-        objectAltitude={0.012}
+        objectAltitude={(d) => (d.id === 'spain' ? 0.04 : 0.012)}
         objectFacesSurfaces
         objectThreeObject={createPushpinObject}
         onObjectClick={handlePinClick}
@@ -155,11 +155,11 @@ export default function InteractiveGlobe() {
         labelLat="lat"
         labelLng="lng"
         labelText="text"
-        labelSize={1.2}
+        labelSize={(d) => (d.id === 'spain' ? 2.2 : 1.2)}
         labelDotRadius={0}
         labelIncludeDot={false}
-        labelColor={() => '#ffffff'}
-        labelAltitude={0.025}
+        labelColor={(d) => (d.id === 'spain' ? '#fbbf24' : '#ffffff')}
+        labelAltitude={(d) => (d.id === 'spain' ? 0.06 : 0.025)}
         labelResolution={2}
         arcsData={arcs}
         arcColor="color"
