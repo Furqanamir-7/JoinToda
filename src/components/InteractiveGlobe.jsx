@@ -8,30 +8,30 @@ const MIN_ALTITUDE = 0.6;
 const MAX_ALTITUDE = 4;
 const ZOOM_STEP = 0.6;
 
-function initialSize() {
-  if (typeof window === 'undefined') return { width: 800, height: 600 };
-  return { width: window.innerWidth, height: window.innerHeight };
-}
-
 export default function InteractiveGlobe() {
   const globeRef = useRef(null);
   const wrapperRef = useRef(null);
-  const hoveredPinRef = useRef(null);
   const hintTimerRef = useRef(null);
-  const [size, setSize] = useState(initialSize);
+  const configuredRef = useRef(false);
+  const [size, setSize] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  }));
   const [hint, setHint] = useState(null);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return undefined;
+
     const update = () => {
-      if (!wrapperRef.current) return;
-      const width = wrapperRef.current.clientWidth || window.innerWidth;
-      const height = wrapperRef.current.clientHeight || window.innerHeight;
-      if (width > 0 && height > 0) setSize({ width, height });
+      const width = el.clientWidth || window.innerWidth;
+      const height = el.clientHeight || window.innerHeight;
+      if (width > 1 && height > 1) setSize({ width, height });
     };
+
     update();
     const ro = new ResizeObserver(update);
-    if (wrapperRef.current) ro.observe(wrapperRef.current);
+    ro.observe(el);
     window.addEventListener('resize', update);
     return () => {
       ro.disconnect();
@@ -45,9 +45,10 @@ export default function InteractiveGlobe() {
     };
   }, []);
 
-  const handleGlobeReady = useCallback(() => {
+  const configureGlobe = useCallback(() => {
     const globe = globeRef.current;
-    if (!globe) return;
+    if (!globe || configuredRef.current) return;
+    configuredRef.current = true;
 
     try {
       const controls = globe.controls();
@@ -59,23 +60,38 @@ export default function InteractiveGlobe() {
       controls.minDistance = 110;
       controls.maxDistance = 600;
     } catch {
-      /* controls may not exist yet */
+      /* ignore */
     }
 
     try {
       const mat = globe.globeMaterial?.();
       if (mat?.color?.set) mat.color.set('#ffffff');
-      if (mat) {
-        mat.emissiveIntensity = 0;
-      }
     } catch {
-      /* ignore material tweaks */
+      /* ignore */
     }
 
     const isMobile = window.innerWidth < 640;
-    globe.pointOfView({ lat: 25, lng: -10, altitude: isMobile ? 2.6 : 2.0 }, 0);
-    setReady(true);
+    try {
+      globe.pointOfView({ lat: 25, lng: -10, altitude: isMobile ? 2.6 : 2.0 }, 0);
+    } catch {
+      /* ignore */
+    }
   }, []);
+
+  // Configure as soon as the ref is usable; don't block UI on a ready flag.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (globeRef.current) {
+        configureGlobe();
+        window.clearInterval(id);
+      }
+    }, 100);
+    const timeout = window.setTimeout(() => window.clearInterval(id), 8000);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(timeout);
+    };
+  }, [configureGlobe]);
 
   const zoomBy = (delta) => {
     if (!globeRef.current) return;
@@ -88,7 +104,6 @@ export default function InteractiveGlobe() {
   };
 
   const handlePinHover = useCallback((pin) => {
-    hoveredPinRef.current = pin || null;
     if (!globeRef.current) return;
     try {
       globeRef.current.controls().autoRotate = !pin;
@@ -118,14 +133,13 @@ export default function InteractiveGlobe() {
     []
   );
 
-  // Sparse arcs only (hub spokes) so WebGL stays healthy with many countries.
   const arcs = useMemo(() => {
     const hubs = ['usa', 'spain', 'china', 'australia', 'saudi', 'kenya'];
     const hubPins = globePins.filter((p) => hubs.includes(p.id));
     const out = [];
     const arcColor = [
       'rgba(96,165,250,0)',
-      'rgba(96,165,250,0.7)',
+      'rgba(96,165,250,0.65)',
       'rgba(96,165,250,0)',
     ];
     for (let i = 0; i < hubPins.length; i++) {
@@ -146,16 +160,17 @@ export default function InteractiveGlobe() {
   const makePinEl = useCallback(
     (pin) => {
       const el = createPinElement(pin);
-      el.addEventListener('click', (e) => {
+      el.style.pointerEvents = 'auto';
+      el.onclick = (e) => {
         e.stopPropagation();
         handlePinClick(pin);
-      });
-      el.addEventListener('mouseenter', () => handlePinHover(pin));
-      el.addEventListener('mouseleave', () => handlePinHover(null));
-      el.addEventListener('dblclick', (e) => {
+      };
+      el.onmouseenter = () => handlePinHover(pin);
+      el.onmouseleave = () => handlePinHover(null);
+      el.ondblclick = (e) => {
         e.stopPropagation();
         window.open(chapterUrlForPin(pin.id), '_blank', 'noopener,noreferrer');
-      });
+      };
       return el;
     },
     [handlePinClick, handlePinHover]
@@ -164,15 +179,8 @@ export default function InteractiveGlobe() {
   return (
     <div
       ref={wrapperRef}
-      className="relative w-full h-full overflow-hidden bg-black"
-      style={{ minHeight: '100vh', minWidth: '100vw' }}
+      className="relative w-screen h-screen overflow-hidden bg-black"
     >
-      {!ready && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black pointer-events-none">
-          <div className="text-neutral-400 text-sm tracking-wide">Loading globe…</div>
-        </div>
-      )}
-
       <Globe
         ref={globeRef}
         width={size.width}
@@ -184,21 +192,21 @@ export default function InteractiveGlobe() {
         atmosphereAltitude={0.22}
         globeImageUrl="/textures/earth-blue-marble.jpg"
         bumpImageUrl="/textures/earth-topology.png"
-        onGlobeReady={handleGlobeReady}
+        onGlobeReady={configureGlobe}
         htmlElementsData={hubData}
         htmlLat="lat"
         htmlLng="lng"
-        htmlAltitude={0.012}
+        htmlAltitude={0.015}
         htmlElement={makePinEl}
         labelsData={labels}
         labelLat="lat"
         labelLng="lng"
         labelText="text"
-        labelSize={1.15}
+        labelSize={1.1}
         labelDotRadius={0}
         labelIncludeDot={false}
         labelColor={() => 'rgba(255,255,255,0.92)'}
-        labelAltitude={0.02}
+        labelAltitude={0.022}
         labelResolution={2}
         arcsData={arcs}
         arcColor="color"
