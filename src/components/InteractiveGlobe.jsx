@@ -106,7 +106,29 @@ export default function InteractiveGlobe() {
 
   const hubData = useMemo(() => globePins.map((p) => ({ ...p })), []);
   const labels = useMemo(
-    () => globePins.map((p) => ({ ...p, text: p.name })),
+    () =>
+      globePins.flatMap((p) => {
+        if (p.id === 'spain') {
+          // Two-line label with correct Spanish accents (ó, ñ)
+          return [
+            {
+              ...p,
+              id: 'spain-label-1',
+              text: p.labelLine1 || 'Asociación de Propietarios y Conductores',
+              lat: p.lat + 1.15,
+              lng: p.lng,
+            },
+            {
+              ...p,
+              id: 'spain-label-2',
+              text: p.labelLine2 || 'de Camión de España',
+              lat: p.lat - 0.35,
+              lng: p.lng,
+            },
+          ];
+        }
+        return [{ ...p, text: p.name }];
+      }),
     []
   );
 
@@ -155,11 +177,11 @@ export default function InteractiveGlobe() {
         labelLat="lat"
         labelLng="lng"
         labelText="text"
-        labelSize={(d) => (d.id === 'spain' ? 1.35 : 1.2)}
+        labelSize={(d) => (d.id?.startsWith('spain') ? 1.25 : 1.2)}
         labelDotRadius={0}
         labelIncludeDot={false}
-        labelColor={(d) => (d.id === 'spain' ? '#fbbf24' : '#ffffff')}
-        labelAltitude={(d) => (d.id === 'spain' ? 0.08 : 0.025)}
+        labelColor={(d) => (d.id?.startsWith('spain') ? '#fbbf24' : '#ffffff')}
+        labelAltitude={(d) => (d.id?.startsWith('spain') ? 0.08 : 0.025)}
         labelResolution={3}
         arcsData={arcs}
         arcColor="color"
