@@ -11,3 +11,6 @@ dist-ssr
 .vscode
 *.log
 .vercel
+
+.vercel
+.env*
