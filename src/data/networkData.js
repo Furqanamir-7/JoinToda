@@ -120,7 +120,7 @@ export const globePins = [
   },
   {
     id: 'spain',
-    name: 'Spain',
+    name: 'Asociación de Propietarios y Conductores\nde Camión de España',
     code: 'ES',
     fullName: 'Asociación de Propietarios y Conductores de Camión de España',
     lat: 40.4168,

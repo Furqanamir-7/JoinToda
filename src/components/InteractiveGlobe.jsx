@@ -155,12 +155,12 @@ export default function InteractiveGlobe() {
         labelLat="lat"
         labelLng="lng"
         labelText="text"
-        labelSize={(d) => (d.id === 'spain' ? 2.2 : 1.2)}
+        labelSize={(d) => (d.id === 'spain' ? 1.35 : 1.2)}
         labelDotRadius={0}
         labelIncludeDot={false}
         labelColor={(d) => (d.id === 'spain' ? '#fbbf24' : '#ffffff')}
-        labelAltitude={(d) => (d.id === 'spain' ? 0.06 : 0.025)}
-        labelResolution={2}
+        labelAltitude={(d) => (d.id === 'spain' ? 0.08 : 0.025)}
+        labelResolution={3}
         arcsData={arcs}
         arcColor="color"
         arcStroke="stroke"
