@@ -24,6 +24,8 @@ export default {
         display: ['Syne', 'system-ui', '-apple-system', 'sans-serif'],
         body: ['DM Sans', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        valley: ['Valley', 'cursive', 'serif'],
+        avenir: ['Avenir Next', 'Avenir', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
     },
   },

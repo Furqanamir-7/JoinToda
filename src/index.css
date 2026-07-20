@@ -2,30 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Top headings */
+@font-face {
+  font-family: 'Valley';
+  src: url('/fonts/ValleyPersonalUse.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Bottom headings — Avenir Next LT Pro (Avenir Pro) */
+@font-face {
+  font-family: 'Avenir Next';
+  src: url('/fonts/AvenirNextLTPro-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Avenir Next';
+  src: url('/fonts/AvenirNextLTPro-It.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Avenir Next';
+  src: url('/fonts/AvenirNextLTPro-MediumIt.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Avenir Next';
+  src: url('/fonts/AvenirNextLTPro-Demi.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Avenir Next';
+  src: url('/fonts/AvenirNextLTPro-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Avenir Next';
+  src: url('/fonts/AvenirNextLTPro-Heavy.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   html {
-    scroll-behavior: smooth;
-    overflow-x: hidden;
-    max-width: 100vw;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    color-scheme: dark;
   }
   body {
-    background-color: #0a0a0a;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    background-color: #000000;
     color: #e5e5e5;
-    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-    max-width: 100vw;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* Prevent iOS rubber-band / address-bar layout jumps */
+    position: fixed;
+    inset: 0;
+  }
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
   }
   * {
     box-sizing: border-box;
   }
-  /* Long unbreakable strings (urls, hashes) shouldn't push the layout wider
-     than the viewport on mobile. `break-word` only kicks in for tokens that
-     can't fit, so normal English words stay intact. */
   h1, h2, h3, h4, p, a, span, li {
     overflow-wrap: break-word;
     word-break: normal;
   }
+  /* Normalize button/font inheritance across browsers */
+  button {
+    font: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Full-viewport shell — fallbacks for browsers without svh/dvh */
+.app-shell {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100%;
+  background: #000;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 @layer utilities {
@@ -63,14 +155,24 @@
   }
 }
 
-/* Globe canvas — pure black backdrop, no halos */
-.globe-wrapper {
-  background: #000000;
-  border-radius: 1rem;
-}
-.globe-wrapper canvas {
+/* Globe canvas — consistent across browsers */
+.globe-stage,
+.globe-stage canvas {
   background: #000000 !important;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.globe-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* HTML chapter markers — same box model in Chromium / Firefox / Safari */
+.chapter-logo-btn,
+.chapter-name {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Map pushpin markers on the 3D globe */
