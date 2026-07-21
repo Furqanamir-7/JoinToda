@@ -9,15 +9,15 @@ import {
 import { BRAND, brandColor } from '../data/brandTheme';
 import GlobeChrome from './GlobeChrome';
 
-const MIN_ALTITUDE = { mobile: 1.15, desktop: 1.2 };
-/** Max zoom-out — mobile starts further out so text stays clear of the globe. */
-const MAX_ALTITUDE = { mobile: 2.95, desktop: 2.15 };
+const MIN_ALTITUDE = { mobile: 1.35, desktop: 1.2 };
+/** Max zoom-out — keep globe large like the WhatsApp Pacific reference. */
+const MAX_ALTITUDE = { mobile: 2.35, desktop: 2.15 };
 const ZOOM_STEP = 0.35;
 const LABEL_COLOR = BRAND.label;
 /** Just above max zoom-out so dots always grow within the allowed range. */
-const MARKER_SHOW_ALTITUDE = { mobile: 3.0, desktop: 2.2 };
-/** Altitude where logos reach full readable size. */
-const MARKER_FULL_ALTITUDE = { mobile: 1.2, desktop: 1.25 };
+const MARKER_SHOW_ALTITUDE = { mobile: 2.45, desktop: 2.2 };
+/** Altitude where logos reach full readable size (= max zoom-in). */
+const MARKER_FULL_ALTITUDE = { mobile: 1.35, desktop: 1.25 };
 
 function isMobileViewport() {
   if (typeof window === 'undefined') return false;
@@ -380,9 +380,9 @@ export default function InteractiveGlobe() {
       controls.autoRotateSpeed = mobile ? 0.22 : 0.28;
       controls.enableZoom = true;
       controls.rotateSpeed = mobile ? 0.45 : 0.6;
-      controls.minDistance = mobile ? 215 : 220;
+      controls.minDistance = mobile ? 250 : 220;
       // Caps camera so you can’t pull back past the allowed frame
-      controls.maxDistance = mobile ? 400 : 315;
+      controls.maxDistance = mobile ? 340 : 315;
     } catch {
       /* ignore */
     }
@@ -415,9 +415,11 @@ export default function InteractiveGlobe() {
       /* ignore */
     }
 
-    // Open at max zoom-out (Atlantic full-globe reference)
+    // Open at max zoom-out — Pacific frame (matches WhatsApp reference)
     const startAlt = mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop;
-    globe.pointOfView({ lat: 20, lng: -30, altitude: startAlt }, 0);
+    const startLat = mobile ? 5 : 20;
+    const startLng = mobile ? 165 : -30;
+    globe.pointOfView({ lat: startLat, lng: startLng, altitude: startAlt }, 0);
     syncMarkerScales(wrapperRef.current, startAlt, mobile);
   }, [mobile]);
 
@@ -553,15 +555,15 @@ export default function InteractiveGlobe() {
     ? (hint.labelLines?.length ? hint.labelLines : [hint.name]).slice(0, 2)
     : [];
 
-  // Desktop: globe in right panel. Mobile: middle band only — never under text.
+  // Desktop: globe in right panel. Mobile: middle band — match WhatsApp reference framing.
   const DESKTOP_LEFT_FRAC = 0.38;
-  const mobileTopPx = Math.round(Math.max(size.height * 0.235, 152));
-  const mobileBottomPx = Math.round(Math.max(size.height * 0.195, 132));
+  const mobileTopPx = Math.round(Math.max(size.height * 0.21, 140));
+  const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
   const globeW = mobile
     ? size.width
     : Math.max(320, Math.round(size.width * (1 - DESKTOP_LEFT_FRAC)));
   const globeH = mobile
-    ? Math.max(240, size.height - mobileTopPx - mobileBottomPx)
+    ? Math.max(260, size.height - mobileTopPx - mobileBottomPx)
     : size.height;
   const desktopLeftPx = mobile ? 0 : Math.round(size.width - globeW);
 
@@ -711,12 +713,13 @@ export default function InteractiveGlobe() {
                 #JoinTODA
               </div>
               <div
-                className="mt-1 text-[13px] leading-tight tracking-wide"
+                className="mt-1 text-[13px] leading-tight"
                 style={{
                   color: brandColor.manifesto,
                   fontFamily:
                     "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
                   fontWeight: 500,
+                  letterSpacing: '0.01em',
                 }}
               >
                 The Truckers Manifesto

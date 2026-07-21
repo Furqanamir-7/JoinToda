@@ -1,0 +1,16 @@
+﻿---
+description: Always deploy JoinToda changes to Vercel production
+alwaysApply: true
+---
+
+# Deploy on every change
+
+When the user asks for a code or design change on this project:
+
+1. Make the requested changes
+2. Commit to git (clear message focused on why)
+3. Push to `origin` (`main`)
+4. Deploy to Vercel production with `vercel --prod --yes`
+
+Do this without waiting to be asked to deploy, unless the user explicitly says not to deploy.
+Production alias: https://www.truckersoftheworld.com

@@ -120,8 +120,16 @@
   -webkit-overflow-scrolling: auto;
 }
 
+/* Baked title PNG (glow already in image) — knock out black plate */
+.toda-title-img {
+  mix-blend-mode: screen;
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
 @layer utilities {
-  /* Soft cyan/blue bloom on main TODA title (mobile + web) */
+  /* Soft cyan/blue bloom on main TODA title (CSS fallback) */
   .title-glow {
     text-shadow:
       0 0 6px rgba(90, 180, 255, 0.55),
