@@ -62,30 +62,20 @@ export default function GlobeChrome() {
           <div className="max-w-[min(40rem,42vw)] text-center pl-2">
             <h1 className="m-0 overflow-hidden">
               <img
-                src="/images/toda-title.png"
-                alt="Truck Owners and Driver Association"
-                className="toda-title-img mx-auto block w-full max-w-[28rem] h-auto"
-                width={348}
-                height={66}
+                src="/images/toda-title-desktop.png"
+                alt="Truck Owners and Driver Association — Truckers of the World, Unite!"
+                className="toda-title-img mx-auto block w-full max-w-[34rem] h-auto"
+                width={781}
+                height={258}
                 draggable={false}
               />
             </h1>
-            <p
-              className="mt-5 text-[clamp(1.05rem,1.55vw,1.4rem)] uppercase tracking-[0.08em]"
-              style={{
-                color: brandColor.slogan,
-                fontFamily: OSWALD,
-                fontWeight: 500,
-              }}
-            >
-              Truckers of the World, Unite!
-            </p>
           </div>
           <a
             href="https://jointoda.com/resources/"
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto shrink-0 text-lg leading-none hover:opacity-80"
+            className="pointer-events-auto shrink-0 text-[14px] leading-none hover:opacity-80"
             style={META}
           >
             Resources
@@ -116,7 +106,10 @@ export default function GlobeChrome() {
           >
             Declaration of Unity
           </div>
-          <div className="mt-0.5 text-sm" style={META}>
+          <div
+            className="mt-0.5 text-[14px] leading-none"
+            style={META}
+          >
             The Truckers Manifesto
           </div>
         </div>
