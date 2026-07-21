@@ -2,9 +2,8 @@ import { Link } from 'react-router-dom';
 import { brandColor } from '../data/brandTheme';
 
 const AVENIR = "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif";
-const OSWALD = "Oswald, 'Arial Narrow', sans-serif";
 
-/** Muted-gold Resources / Manifesto — light condensed sans from reference crop */
+/** Resources / Manifesto — same Avenir + primary copper as mobile */
 const META = {
   color: brandColor.resources,
   fontFamily: AVENIR,
@@ -20,39 +19,26 @@ export default function GlobeChrome() {
   return (
     <>
       {/* —— Mobile top —— */}
-      <header className="md:hidden pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(0.35rem,env(safe-area-inset-top,0px))] px-3 pb-3">
-        <div className="flex justify-end pr-0.5">
+      <header className="md:hidden pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(0.25rem,env(safe-area-inset-top,0px))] px-2 pb-2">
+        <div className="relative mx-auto w-[min(96vw,22.5rem)]">
+          <h1 className="m-0 overflow-hidden">
+            <img
+              src="/images/meow.png"
+              alt="Truck Owners and Driver Association — Truckers of the World, Unite!"
+              className="toda-title-img mx-auto block w-full h-auto"
+              width={346}
+              height={178}
+              draggable={false}
+            />
+          </h1>
+          {/* Hit target over baked-in Resources (top-right of meow.png) */}
           <a
             href="https://jointoda.com/resources/"
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto text-[14px] leading-none active:opacity-80"
-            style={META}
-          >
-            Resources
-          </a>
-        </div>
-        <div className="mt-1 text-center px-1">
-          <h1 className="m-0 overflow-hidden">
-            <img
-              src="/images/toda-title.png"
-              alt="Truck Owners and Driver Association"
-              className="toda-title-img mx-auto block w-[min(94vw,22.5rem)] h-auto"
-              width={348}
-              height={66}
-              draggable={false}
-            />
-          </h1>
-          <p
-            className="mt-4 text-[12px] sm:text-[13px] uppercase tracking-[0.1em]"
-            style={{
-              color: brandColor.slogan,
-              fontFamily: OSWALD,
-              fontWeight: 500,
-            }}
-          >
-            Truckers of the World, Unite!
-          </p>
+            className="pointer-events-auto absolute top-0 right-0 w-[38%] h-[22%]"
+            aria-label="Resources"
+          />
         </div>
       </header>
 

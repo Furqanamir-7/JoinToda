@@ -557,7 +557,7 @@ export default function InteractiveGlobe() {
 
   // Desktop: globe in right panel. Mobile: middle band — match WhatsApp reference framing.
   const DESKTOP_LEFT_FRAC = 0.38;
-  const mobileTopPx = Math.round(Math.max(size.height * 0.21, 140));
+  const mobileTopPx = Math.round(Math.max(size.height * 0.26, 188));
   const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
   const globeW = mobile
     ? size.width
