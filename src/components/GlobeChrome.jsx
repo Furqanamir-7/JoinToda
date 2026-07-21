@@ -33,7 +33,7 @@ export default function GlobeChrome() {
           </a>
         </div>
         <div className="mt-1 text-center px-1">
-          <h1 className="m-0">
+          <h1 className="m-0 overflow-hidden">
             <img
               src="/images/toda-title.png"
               alt="Truck Owners and Driver Association"
@@ -44,7 +44,7 @@ export default function GlobeChrome() {
             />
           </h1>
           <p
-            className="mt-1.5 text-[12px] sm:text-[13px] uppercase tracking-[0.1em]"
+            className="mt-4 text-[12px] sm:text-[13px] uppercase tracking-[0.1em]"
             style={{
               color: brandColor.slogan,
               fontFamily: OSWALD,
@@ -57,10 +57,10 @@ export default function GlobeChrome() {
       </header>
 
       {/* —— Desktop top —— */}
-      <header className="hidden md:block pointer-events-none absolute inset-x-0 top-0 z-30 pt-6 px-8">
+      <header className="hidden md:block pointer-events-none absolute inset-x-0 top-0 z-30 pt-6 pl-10 pr-8">
         <div className="flex items-start justify-between gap-6">
-          <div className="max-w-[min(40rem,42vw)] text-center">
-            <h1 className="m-0">
+          <div className="max-w-[min(40rem,42vw)] text-center pl-2">
+            <h1 className="m-0 overflow-hidden">
               <img
                 src="/images/toda-title.png"
                 alt="Truck Owners and Driver Association"
@@ -71,7 +71,7 @@ export default function GlobeChrome() {
               />
             </h1>
             <p
-              className="mt-2.5 text-[clamp(1.05rem,1.55vw,1.4rem)] uppercase tracking-[0.08em]"
+              className="mt-5 text-[clamp(1.05rem,1.55vw,1.4rem)] uppercase tracking-[0.08em]"
               style={{
                 color: brandColor.slogan,
                 fontFamily: OSWALD,

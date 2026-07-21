@@ -620,26 +620,38 @@ export default function InteractiveGlobe() {
         />
       </div>
 
-      {/* Desktop: keep title column clear of the globe */}
+      {/* Desktop: soft fade into globe — no hard vertical seam */}
       {!mobile && (
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-[40] bg-gradient-to-r from-black from-55% via-black/85 to-transparent"
-          style={{ width: `calc(${desktopLeftPx}px + 4rem)` }}
+          className="pointer-events-none absolute inset-y-0 left-0 z-[40]"
+          style={{
+            width: `calc(${desktopLeftPx}px + 5rem)`,
+            background:
+              'linear-gradient(90deg, #000 0%, #000 58%, rgba(0,0,0,0.85) 78%, transparent 100%)',
+          }}
           aria-hidden
         />
       )}
 
-      {/* Mobile: solid text safe zones (works the same in every browser) */}
+      {/* Mobile: soft text safe zones (no hard grey edge lines) */}
       {mobile && (
         <>
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-[40] bg-black"
-            style={{ height: mobileTopPx }}
+            className="pointer-events-none absolute inset-x-0 top-0 z-[40]"
+            style={{
+              height: mobileTopPx + 28,
+              background:
+                'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
+            }}
             aria-hidden
           />
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[40] bg-black"
-            style={{ height: mobileBottomPx }}
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[40]"
+            style={{
+              height: mobileBottomPx + 28,
+              background:
+                'linear-gradient(0deg, #000 0%, #000 72%, transparent 100%)',
+            }}
             aria-hidden
           />
         </>

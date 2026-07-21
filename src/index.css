@@ -126,6 +126,8 @@
   -webkit-user-drag: none;
   user-select: none;
   pointer-events: none;
+  /* Crop faint grey edge/line from the screenshot plate */
+  clip-path: inset(1px 0 2px 0);
 }
 
 @layer utilities {
