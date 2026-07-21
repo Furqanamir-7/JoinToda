@@ -65,8 +65,8 @@ export default function GlobeChrome() {
                 src="/images/toda-title.png"
                 alt="Truck Owners and Driver Association"
                 className="toda-title-img mx-auto block w-full max-w-[28rem] h-auto"
-                width={363}
-                height={67}
+                width={348}
+                height={66}
                 draggable={false}
               />
             </h1>
