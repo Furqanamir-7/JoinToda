@@ -9,7 +9,7 @@ export const BRAND = {
   titleGlow:
     '0 0 6px rgba(90, 180, 255, 0.55), 0 0 18px rgba(70, 160, 230, 0.45), 0 0 36px rgba(50, 130, 200, 0.3), 0 0 64px rgba(40, 110, 180, 0.18)',
   /** Slogan — TRUCKERS OF THE WORLD, UNITE! */
-  slogan: '#A36A47',
+  slogan: '#9BA1A8',
   /** Resources (primary copper) */
   resources: '#A36A47',
   /** #JoinTODA */
