@@ -1,19 +1,9 @@
 import { Link } from 'react-router-dom';
-import { brandColor } from '../data/brandTheme';
-
-const AVENIR = "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif";
-
-/** Resources / Manifesto — same Avenir + primary copper as mobile */
-const META = {
-  color: brandColor.resources,
-  fontFamily: AVENIR,
-  fontWeight: 500,
-  letterSpacing: '0.01em',
-};
 
 /**
- * Brand chrome — title uses baked glow PNG from client screenshot.
- * Resources + Manifesto share muted gold Avenir styling.
+ * Brand chrome — baked PNGs for exact type/glow.
+ * Mobile: meow.png (top) + meow-2.png (bottom, in InteractiveGlobe).
+ * Desktop: toda-title-desktop.png (title), web.png (Resources), web-2.png (bottom left).
  */
 export default function GlobeChrome() {
   return (
@@ -61,49 +51,41 @@ export default function GlobeChrome() {
             href="https://jointoda.com/resources/"
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto shrink-0 text-[14px] leading-none hover:opacity-80"
-            style={META}
+            className="pointer-events-auto shrink-0 hover:opacity-80"
+            aria-label="Resources"
           >
-            Resources
+            <img
+              src="/images/web.png"
+              alt="Resources"
+              className="toda-title-img block w-[7.5rem] h-auto"
+              width={148}
+              height={61}
+              draggable={false}
+            />
           </a>
         </div>
       </header>
 
       {/* —— Desktop bottom —— */}
       <footer className="hidden md:flex pointer-events-none absolute inset-x-0 bottom-0 z-30 pb-6 px-8 items-end justify-between gap-6">
-        <div>
-          <div
-            className="text-lg tracking-tight"
-            style={{
-              color: brandColor.joinToda,
-              fontFamily: AVENIR,
-              fontWeight: 800,
-            }}
-          >
-            #JoinTODA
-          </div>
-          <div
-            className="mt-0.5 text-2xl leading-tight tracking-tight"
-            style={{
-              color: brandColor.declaration,
-              fontFamily: AVENIR,
-              fontWeight: 800,
-            }}
-          >
-            Declaration of Unity
-          </div>
-          <div
-            className="mt-0.5 text-[14px] leading-none"
-            style={META}
-          >
-            The Truckers Manifesto
-          </div>
+        <div className="overflow-hidden">
+          <img
+            src="/images/web-2.png"
+            alt="#JoinTODA — Declaration of Unity — The Truckers Manifesto"
+            className="toda-title-img block w-[min(26rem,38vw)] h-auto"
+            width={405}
+            height={121}
+            draggable={false}
+          />
         </div>
         <div className="flex flex-col items-end gap-2">
           <Link
             to="/cookies"
             className="pointer-events-auto text-xs text-neutral-400 hover:text-neutral-200 underline-offset-2 hover:underline"
-            style={{ fontFamily: AVENIR }}
+            style={{
+              fontFamily:
+                "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
+            }}
           >
             Cookie settings
           </Link>

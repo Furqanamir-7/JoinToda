@@ -716,7 +716,7 @@ export default function InteractiveGlobe() {
               src="/images/meow-2.png"
               alt="#JoinTODA — The Truckers Manifesto — iUnity Download"
               className="toda-title-img mx-auto block w-full h-auto"
-              width={346}
+              width={341}
               height={64}
               draggable={false}
             />
