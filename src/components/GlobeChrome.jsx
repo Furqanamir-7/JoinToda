@@ -2,47 +2,53 @@ import { Link } from 'react-router-dom';
 import { brandColor } from '../data/brandTheme';
 
 const AVENIR = "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif";
-const VALLEY = 'Valley, cursive, serif';
+const ANTON = "Anton, Impact, 'Arial Narrow', sans-serif";
+const OSWALD = "Oswald, 'Arial Narrow', sans-serif";
 
 /**
- * Brand chrome — colors from client reference screenshot.
- * Fonts: Avenir Pro for names/titles, Valley for slogan / Resources.
+ * Brand chrome — matched to client reference screenshots (2026-07-21).
+ * Title: Anton + blue glow. Slogan / Resources: Oswald. Bottom names: Avenir.
  */
 export default function GlobeChrome() {
   return (
     <>
       {/* —— Mobile top —— */}
-      <header className="md:hidden pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(0.5rem,env(safe-area-inset-top,0px))] px-3 pb-5">
-        <div className="flex justify-end">
+      <header className="md:hidden pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(0.35rem,env(safe-area-inset-top,0px))] px-3 pb-4">
+        <div className="flex justify-end pr-0.5">
           <a
             href="https://jointoda.com/resources/"
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto text-[13px] font-semibold active:opacity-80"
-            style={{ color: brandColor.resources, fontFamily: VALLEY }}
+            className="pointer-events-auto text-[15px] leading-none active:opacity-80"
+            style={{
+              color: brandColor.resources,
+              fontFamily: OSWALD,
+              fontWeight: 500,
+              letterSpacing: '0.02em',
+            }}
           >
             Resources
           </a>
         </div>
-        <div className="mt-2 text-center px-2">
+        <div className="mt-1.5 text-center px-1">
           <h1
-            className="uppercase text-[25px] sm:text-[27px] leading-[1.12] tracking-[0.01em]"
+            className="title-glow uppercase text-[26px] sm:text-[28px] leading-[1.05] tracking-[0.02em]"
             style={{
               color: brandColor.title,
-              fontFamily: AVENIR,
-              fontWeight: 800,
+              fontFamily: ANTON,
+              fontWeight: 400,
             }}
           >
-            Truck Owners and
+            Truck Owners and Driver
             <br />
-            Driver Association
+            Association
           </h1>
           <p
-            className="mt-2.5 text-[14px] sm:text-[15px] uppercase tracking-[0.06em]"
+            className="mt-2 text-[13px] sm:text-[14px] uppercase tracking-[0.08em]"
             style={{
               color: brandColor.slogan,
-              fontFamily: VALLEY,
-              fontWeight: 400,
+              fontFamily: OSWALD,
+              fontWeight: 500,
             }}
           >
             Truckers of the World, Unite!
@@ -53,27 +59,25 @@ export default function GlobeChrome() {
       {/* —— Desktop top —— */}
       <header className="hidden md:block pointer-events-none absolute inset-x-0 top-0 z-30 pt-6 px-8">
         <div className="flex items-start justify-between gap-6">
-          <div className="max-w-[min(36rem,38vw)] text-center">
+          <div className="max-w-[min(40rem,42vw)] text-center">
             <h1
-              className="uppercase leading-[1.08] tracking-tight text-[clamp(2.2rem,3.5vw,3.4rem)]"
+              className="title-glow uppercase leading-[1.05] tracking-[0.02em] text-[clamp(2.4rem,3.6vw,3.6rem)]"
               style={{
                 color: brandColor.title,
-                fontFamily: AVENIR,
-                fontWeight: 800,
+                fontFamily: ANTON,
+                fontWeight: 400,
               }}
             >
-              Truck Owners and
-              <br />
-              Driver
+              Truck Owners and Driver
               <br />
               Association
             </h1>
             <p
-              className="mt-2.5 text-[clamp(1.15rem,1.7vw,1.55rem)] uppercase tracking-[0.05em]"
+              className="mt-2.5 text-[clamp(1.05rem,1.55vw,1.4rem)] uppercase tracking-[0.08em]"
               style={{
                 color: brandColor.slogan,
-                fontFamily: VALLEY,
-                fontWeight: 400,
+                fontFamily: OSWALD,
+                fontWeight: 500,
               }}
             >
               Truckers of the World, Unite!
@@ -83,8 +87,13 @@ export default function GlobeChrome() {
             href="https://jointoda.com/resources/"
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto shrink-0 text-lg font-semibold hover:opacity-80"
-            style={{ color: brandColor.resources, fontFamily: VALLEY }}
+            className="pointer-events-auto shrink-0 text-lg leading-none hover:opacity-80"
+            style={{
+              color: brandColor.resources,
+              fontFamily: OSWALD,
+              fontWeight: 500,
+              letterSpacing: '0.02em',
+            }}
           >
             Resources
           </a>
@@ -119,7 +128,7 @@ export default function GlobeChrome() {
             style={{
               color: brandColor.manifesto,
               fontFamily: AVENIR,
-              fontWeight: 600,
+              fontWeight: 500,
             }}
           >
             The Truckers Manifesto

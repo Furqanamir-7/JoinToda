@@ -1,21 +1,24 @@
 /**
- * Brand colors sampled from client reference screenshot
- * (WhatsApp Image 2026-07-14).
+ * Brand colors sampled from client reference screenshots
+ * (WhatsApp Image 2026-07-21).
  */
 export const BRAND = {
   /** Main title — TRUCK OWNERS AND DRIVER ASSOCIATION */
-  title: '#152A5D',
+  title: '#1A3A6E',
+  /** Soft cyan/blue bloom behind the main title */
+  titleGlow:
+    '0 0 6px rgba(90, 180, 255, 0.55), 0 0 18px rgba(70, 160, 230, 0.45), 0 0 36px rgba(50, 130, 200, 0.3), 0 0 64px rgba(40, 110, 180, 0.18)',
   /** Slogan — TRUCKERS OF THE WORLD, UNITE! */
-  slogan: '#545D66',
+  slogan: '#9BA1A8',
   /** Resources link */
-  resources: '#A3865A',
-  /** #JoinTODA (slightly darker navy than title) */
-  joinToda: '#0F1C3B',
-  /** Declaration of Unity */
+  resources: '#C49A4A',
+  /** #JoinTODA */
+  joinToda: '#1A3A6E',
+  /** Declaration of Unity (desktop) */
   declaration: '#F09214',
   /** The Truckers Manifesto */
-  manifesto: '#131727',
-  /** iUnity / accent orange (same family as Declaration) */
+  manifesto: '#B08A4A',
+  /** iUnity accent orange */
   accent: '#F09214',
   /** Chapter labels on the globe */
   label: '#d8eeef',
@@ -24,6 +27,7 @@ export const BRAND = {
 /** Convenience aliases used by chrome components */
 export const brandColor = {
   title: BRAND.title,
+  titleGlow: BRAND.titleGlow,
   slogan: BRAND.slogan,
   resources: BRAND.resources,
   joinToda: BRAND.joinToda,

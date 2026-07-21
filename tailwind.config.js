@@ -26,6 +26,8 @@ export default {
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
         valley: ['Valley', 'cursive', 'serif'],
         avenir: ['Avenir Next', 'Avenir', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        anton: ['Anton', 'Impact', 'Arial Narrow', 'sans-serif'],
+        oswald: ['Oswald', 'Arial Narrow', 'sans-serif'],
       },
     },
   },

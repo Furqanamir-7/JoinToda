@@ -668,7 +668,7 @@ export default function InteractiveGlobe() {
         </div>
 
         {/* Mobile: zoom above the bottom headings */}
-        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[7.75rem] flex md:hidden flex-row items-center gap-4 z-40">
+        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[5.75rem] flex md:hidden flex-row items-center gap-4 z-40">
           <button
             type="button"
             onClick={() => zoomBy(ZOOM_STEP)}
@@ -687,20 +687,20 @@ export default function InteractiveGlobe() {
           </button>
         </div>
 
-        {/* Mobile bottom headings — same colors as desktop */}
+        {/* Mobile bottom — matches reference: left #JoinTODA + Manifesto, right iUnity Download */}
         <div
           className="md:hidden absolute inset-x-0 z-50 px-4"
           style={{
             bottom: 0,
             paddingBottom:
-              'max(1.75rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem))',
-            paddingTop: '1.25rem',
+              'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+            paddingTop: '1rem',
           }}
         >
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0 text-left">
               <div
-                className="text-[18px] tracking-tight leading-none"
+                className="text-[20px] tracking-tight leading-none"
                 style={{
                   color: brandColor.joinToda,
                   fontFamily:
@@ -711,23 +711,12 @@ export default function InteractiveGlobe() {
                 #JoinTODA
               </div>
               <div
-                className="mt-1 text-[16px] leading-tight tracking-tight"
-                style={{
-                  color: brandColor.declaration,
-                  fontFamily:
-                    "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
-                  fontWeight: 800,
-                }}
-              >
-                Declaration of Unity
-              </div>
-              <div
-                className="mt-0.5 text-[12px] leading-tight"
+                className="mt-1 text-[13px] leading-tight tracking-wide"
                 style={{
                   color: brandColor.manifesto,
                   fontFamily:
                     "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
-                  fontWeight: 600,
+                  fontWeight: 500,
                 }}
               >
                 The Truckers Manifesto
@@ -742,9 +731,9 @@ export default function InteractiveGlobe() {
                 aria-label="iUnity Download"
               >
                 <span
-                  className="block text-[26px] tracking-tight"
+                  className="block text-[28px] tracking-tight"
                   style={{
-                    color: brandColor.declaration,
+                    color: brandColor.accent,
                     fontFamily:
                       "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
                     fontWeight: 800,
@@ -753,7 +742,7 @@ export default function InteractiveGlobe() {
                   iUnity
                 </span>
                 <span
-                  className="block text-[13px] mt-0.5"
+                  className="block text-[14px] mt-0.5"
                   style={{
                     color: brandColor.title,
                     fontFamily:
