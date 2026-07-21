@@ -682,7 +682,7 @@ export default function InteractiveGlobe() {
         </div>
 
         {/* Mobile: zoom above the bottom headings */}
-        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[5.75rem] flex md:hidden flex-row items-center gap-4 z-40">
+        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[5.25rem] flex md:hidden flex-row items-center gap-4 z-40">
           <button
             type="button"
             onClick={() => zoomBy(ZOOM_STEP)}
@@ -701,74 +701,33 @@ export default function InteractiveGlobe() {
           </button>
         </div>
 
-        {/* Mobile bottom — matches reference: left #JoinTODA + Manifesto, right iUnity Download */}
+        {/* Mobile bottom — meow 2.png (#JoinTODA + Manifesto | iUnity Download) */}
         <div
-          className="md:hidden absolute inset-x-0 z-50 px-4"
+          className="md:hidden absolute inset-x-0 z-50 px-2"
           style={{
             bottom: 0,
             paddingBottom:
-              'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
-            paddingTop: '1rem',
+              'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))',
+            paddingTop: '0.5rem',
           }}
         >
-          <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0 text-left">
-              <div
-                className="text-[20px] tracking-tight leading-none"
-                style={{
-                  color: brandColor.joinToda,
-                  fontFamily:
-                    "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
-                  fontWeight: 800,
-                }}
-              >
-                #JoinTODA
-              </div>
-              <div
-                className="mt-1 text-[13px] leading-tight"
-                style={{
-                  color: brandColor.manifesto,
-                  fontFamily:
-                    "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
-                  fontWeight: 500,
-                  letterSpacing: '0.01em',
-                }}
-              >
-                The Truckers Manifesto
-              </div>
-            </div>
-            <div className="shrink-0 text-right">
-              <a
-                href="https://jointoda.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="pointer-events-auto inline-block leading-none"
-                aria-label="iUnity Download"
-              >
-                <span
-                  className="block text-[28px] tracking-tight"
-                  style={{
-                    color: brandColor.accent,
-                    fontFamily:
-                      "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
-                    fontWeight: 800,
-                  }}
-                >
-                  iUnity
-                </span>
-                <span
-                  className="block text-[14px] mt-0.5"
-                  style={{
-                    color: brandColor.title,
-                    fontFamily:
-                      "'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif",
-                    fontWeight: 600,
-                  }}
-                >
-                  Download
-                </span>
-              </a>
-            </div>
+          <div className="relative mx-auto w-[min(96vw,22.5rem)]">
+            <img
+              src="/images/meow-2.png"
+              alt="#JoinTODA — The Truckers Manifesto — iUnity Download"
+              className="toda-title-img mx-auto block w-full h-auto"
+              width={346}
+              height={64}
+              draggable={false}
+            />
+            {/* Hit target over baked-in iUnity Download (right side) */}
+            <a
+              href="https://jointoda.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pointer-events-auto absolute inset-y-0 right-0 w-[42%]"
+              aria-label="iUnity Download"
+            />
           </div>
         </div>
       </div>
