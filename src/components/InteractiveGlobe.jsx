@@ -61,12 +61,10 @@ function markerVisibilityForAltitude(altitude, mobile) {
 
   const t = Math.min(1, Math.max(0, (showBelow - alt) / (showBelow - fullAt)));
   const logoPx = Math.round(minLogo + t * (maxLogo - minLogo));
-  // Mobile: logos only — names open on tap (avoids crowded overlapping labels).
-  // Desktop: names appear as you zoom in.
-  const fontPx = mobile
-    ? 0
-    : t > 0.12
-      ? Math.round(7 + t * 3)
+  // Names visible on mobile + desktop once logos grow past tiny dots.
+  const fontPx =
+    t > 0.05
+      ? Math.round((mobile ? 7 : 7) + t * (mobile ? 4 : 3))
       : 0;
 
   return {
@@ -87,7 +85,7 @@ function applyAssociationRotationLimits(controls) {
   controls.dampingFactor = 0.08;
 }
 
-/** Push nearby pins apart for readable logo stacks. */
+/** Push nearby pins apart into emptier globe space. */
 function spreadPins(
   pins,
   minSepDeg,
@@ -95,6 +93,7 @@ function spreadPins(
   lngBias = 0.55,
   iterations = 16
 ) {
+  const { minLat, maxLat } = associationLatBounds;
   const out = pins.map((p) => ({ ...p, lat: p.lat, lng: p.lng }));
   for (let iter = 0; iter < iterations; iter++) {
     for (let i = 0; i < out.length; i++) {
@@ -103,14 +102,14 @@ function spreadPins(
         let dlng = out[j].lng - out[i].lng;
         if (dlng > 180) dlng -= 360;
         if (dlng < -180) dlng += 360;
-        // Prefer horizontal separation when nearly stacked on longitude
-        if (Math.abs(dlng) < 0.35 && Math.abs(dlat) < minSepDeg) {
+        // Break near-stacks by fanning left/right into open ocean / empty land
+        if (Math.abs(dlng) < 0.55 && Math.abs(dlat) < minSepDeg * 0.85) {
           const side = (i + j) % 2 === 0 ? -1 : 1;
-          dlng = side * 0.85;
+          dlng = side * (1.15 + (iter % 3) * 0.35);
         }
         const dist = Math.hypot(dlat * latBias, dlng * Math.max(1, lngBias));
         if (dist >= minSepDeg || dist < 0.001) continue;
-        const push = ((minSepDeg - dist) / 2 / dist) * 0.78;
+        const push = ((minSepDeg - dist) / 2 / dist) * 0.82;
         out[i].lat -= dlat * push * latBias;
         out[i].lng -= dlng * push * lngBias;
         out[j].lat += dlat * push * latBias;
@@ -118,7 +117,25 @@ function spreadPins(
       }
     }
   }
+  // Keep markers in the association band so rotation limits still feel natural
+  for (const p of out) {
+    p.lat = Math.min(maxLat - 1.5, Math.max(minLat + 1.5, p.lat));
+  }
   return out;
+}
+
+/** Fan chapter labels left / center / right so text uses empty gaps. */
+function assignLabelSides(pins) {
+  const sorted = [...pins].sort(
+    (a, b) => a.lng - b.lng || b.lat - a.lat || a.id.localeCompare(b.id)
+  );
+  const sideById = new Map();
+  sorted.forEach((p, idx) => {
+    // L / R / C pattern spreads text into open space beside logos
+    const side = idx % 3 === 0 ? -1 : idx % 3 === 1 ? 1 : 0;
+    sideById.set(p.id, side);
+  });
+  return pins.map((p) => ({ ...p, __labelSide: sideById.get(p.id) ?? 0 }));
 }
 
 /**
@@ -147,8 +164,9 @@ function makeChapterMarkerEl(pin, onSelect) {
     'align-items:center',
     'text-align:center',
     'width:max-content',
-    mobile ? 'max-width:min(56px,16vw)' : 'max-width:min(220px,18vw)',
+    mobile ? 'max-width:min(150px,44vw)' : 'max-width:min(220px,18vw)',
   ].join(';');
+  inner.dataset.labelSide = String(pin.__labelSide ?? 0);
 
   const logoBtn = document.createElement('button');
   logoBtn.type = 'button';
@@ -254,15 +272,21 @@ function syncMarkerScales(root, altitude, mobile) {
       }
       if (name) {
         if (showName && fontPx > 0) {
-          name.style.marginTop = mobile ? '4px' : '5px';
+          const side = Number(el.dataset.labelSide) || 0;
+          const ox = mobile ? side * Math.round(logoPx * 0.95 + 14) : 0;
+          name.style.marginTop = mobile ? '3px' : '5px';
           name.style.fontSize = `${fontPx}px`;
           name.style.opacity = '1';
           name.style.pointerEvents = 'auto';
+          name.style.transform = ox ? `translateX(${ox}px)` : '';
+          name.style.textAlign =
+            side < 0 ? 'right' : side > 0 ? 'left' : 'center';
         } else {
           name.style.marginTop = '0';
           name.style.fontSize = '0px';
           name.style.opacity = '0';
           name.style.pointerEvents = 'none';
+          name.style.transform = '';
         }
       }
     } else {
@@ -506,9 +530,9 @@ export default function InteractiveGlobe() {
   const htmlData = useMemo(() => {
     if (hint) return [];
     const base = mobile
-      ? spreadPins(globePins, 13.2, 1.95, 1.25, 28)
+      ? spreadPins(globePins, 17.5, 2.25, 1.75, 46)
       : spreadPins(globePins, 8.0, 2.1, 0.55, 16);
-    return base.map((p) => ({ ...p, __mobile: mobile }));
+    return assignLabelSides(base).map((p) => ({ ...p, __mobile: mobile }));
   }, [mobile, hint]);
 
   const makeLabelEl = useCallback(
