@@ -124,8 +124,34 @@ function spreadPins(
   return out;
 }
 
-/** Fan chapter labels left / center / right so text uses empty gaps. */
-function assignLabelSides(pins) {
+/** Extra repulsion for the dense Europe / Med band (lng −20…45). */
+function spreadEuropeCluster(pins, minSepDeg = 15) {
+  const out = pins.map((p) => ({ ...p }));
+  const inBand = (p) => p.lng >= -20 && p.lng <= 48 && p.lat >= 28 && p.lat <= 72;
+  for (let iter = 0; iter < 36; iter++) {
+    for (let i = 0; i < out.length; i++) {
+      if (!inBand(out[i])) continue;
+      for (let j = i + 1; j < out.length; j++) {
+        if (!inBand(out[j])) continue;
+        let dlat = out[j].lat - out[i].lat;
+        let dlng = out[j].lng - out[i].lng;
+        if (dlng > 180) dlng -= 360;
+        if (dlng < -180) dlng += 360;
+        if (Math.abs(dlng) < 0.8) {
+          dlng = ((i + j) % 2 === 0 ? -1 : 1) * 1.4;
+        }
+        const dist = Math.hypot(dlat * 2.4, dlng * 2.0);
+        if (dist >= minSepDeg || dist < 0.001) continue;
+        const push = ((minSepDeg - dist) / 2 / dist) * 0.9;
+        out[i].lat -= dlat * push * 2.4;
+        out[i].lng -= dlng * push * 2.0;
+        out[j].lat += dlat * push * 2.4;
+        out[j].lng += dlng * push * 2.0;
+      }
+    }
+  }
+  return out;
+}
   const sorted = [...pins].sort(
     (a, b) => a.lng - b.lng || b.lat - a.lat || a.id.localeCompare(b.id)
   );
@@ -529,9 +555,10 @@ export default function InteractiveGlobe() {
 
   const htmlData = useMemo(() => {
     if (hint) return [];
-    const base = mobile
+    let base = mobile
       ? spreadPins(globePins, 17.5, 2.25, 1.75, 46)
       : spreadPins(globePins, 8.0, 2.1, 0.55, 16);
+    if (mobile) base = spreadEuropeCluster(base, 16.5);
     return assignLabelSides(base).map((p) => ({ ...p, __mobile: mobile }));
   }, [mobile, hint]);
 
