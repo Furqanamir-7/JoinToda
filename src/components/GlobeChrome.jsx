@@ -42,7 +42,7 @@ export default function GlobeChrome() {
           <img
             src="/images/chrome/mobile-slogan.png"
             alt="Truckers of the World, Unite!"
-            className="toda-title-img mx-auto block mt-1 w-[min(88vw,20rem)] h-auto"
+            className="toda-title-img mx-auto block mt-4 w-[min(62vw,13.5rem)] h-auto"
             width={752}
             height={157}
             draggable={false}
@@ -67,7 +67,7 @@ export default function GlobeChrome() {
             <img
               src="/images/chrome/desktop-slogan.png"
               alt="Truckers of the World, Unite!"
-              className="toda-title-img mx-auto block mt-1 w-[min(100%,30rem)] h-auto"
+              className="toda-title-img mx-auto block mt-5 w-[min(100%,18.5rem)] h-auto"
               width={720}
               height={175}
               draggable={false}
