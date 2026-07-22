@@ -19,7 +19,7 @@ const MARKER_SHOW_ALTITUDE = { mobile: 2.45, desktop: 2.2 };
 /** Altitude where logos reach full readable size (= max zoom-in). */
 const MARKER_FULL_ALTITUDE = { mobile: 1.35, desktop: 1.25 };
 /** Mobile logos grow larger on zoom-in than before. */
-const LOGO_SIZE = { mobileMax: 46, mobileMin: 9, desktopMax: 36, desktopMin: 10 };
+const LOGO_SIZE = { mobileMax: 40, mobileMin: 9, desktopMax: 36, desktopMin: 10 };
 
 function isMobileViewport() {
   if (typeof window === 'undefined') return false;
@@ -61,8 +61,13 @@ function markerVisibilityForAltitude(altitude, mobile) {
 
   const t = Math.min(1, Math.max(0, (showBelow - alt) / (showBelow - fullAt)));
   const logoPx = Math.round(minLogo + t * (maxLogo - minLogo));
-  // Names appear at max-zoom-out reference level (small) and grow with zoom
-  const fontPx = t > 0.12 ? Math.round((mobile ? 6 : 7) + t * (mobile ? 2 : 3)) : 0;
+  // Mobile: logos only — names open on tap (avoids crowded overlapping labels).
+  // Desktop: names appear as you zoom in.
+  const fontPx = mobile
+    ? 0
+    : t > 0.12
+      ? Math.round(7 + t * 3)
+      : 0;
 
   return {
     logosVisible: true,
@@ -82,24 +87,34 @@ function applyAssociationRotationLimits(controls) {
   controls.dampingFactor = 0.08;
 }
 
-/** Push nearby pins apart — prefer vertical (lat) separation for readable stacks. */
-function spreadPins(pins, minSepDeg, latBias = 1.85) {
+/** Push nearby pins apart for readable logo stacks. */
+function spreadPins(
+  pins,
+  minSepDeg,
+  latBias = 1.85,
+  lngBias = 0.55,
+  iterations = 16
+) {
   const out = pins.map((p) => ({ ...p, lat: p.lat, lng: p.lng }));
-  for (let iter = 0; iter < 16; iter++) {
+  for (let iter = 0; iter < iterations; iter++) {
     for (let i = 0; i < out.length; i++) {
       for (let j = i + 1; j < out.length; j++) {
         let dlat = out[j].lat - out[i].lat;
         let dlng = out[j].lng - out[i].lng;
         if (dlng > 180) dlng -= 360;
         if (dlng < -180) dlng += 360;
-        const dist = Math.hypot(dlat * latBias, dlng);
+        // Prefer horizontal separation when nearly stacked on longitude
+        if (Math.abs(dlng) < 0.35 && Math.abs(dlat) < minSepDeg) {
+          const side = (i + j) % 2 === 0 ? -1 : 1;
+          dlng = side * 0.85;
+        }
+        const dist = Math.hypot(dlat * latBias, dlng * Math.max(1, lngBias));
         if (dist >= minSepDeg || dist < 0.001) continue;
-        const push = ((minSepDeg - dist) / 2 / dist) * 0.72;
-        // Stronger up/down move so logos don’t stack on the same latitude
+        const push = ((minSepDeg - dist) / 2 / dist) * 0.78;
         out[i].lat -= dlat * push * latBias;
-        out[i].lng -= dlng * push * 0.55;
+        out[i].lng -= dlng * push * lngBias;
         out[j].lat += dlat * push * latBias;
-        out[j].lng += dlng * push * 0.55;
+        out[j].lng += dlng * push * lngBias;
       }
     }
   }
@@ -132,7 +147,7 @@ function makeChapterMarkerEl(pin, onSelect) {
     'align-items:center',
     'text-align:center',
     'width:max-content',
-    mobile ? 'max-width:min(180px,48vw)' : 'max-width:min(220px,18vw)',
+    mobile ? 'max-width:min(56px,16vw)' : 'max-width:min(220px,18vw)',
   ].join(';');
 
   const logoBtn = document.createElement('button');
@@ -490,7 +505,9 @@ export default function InteractiveGlobe() {
 
   const htmlData = useMemo(() => {
     if (hint) return [];
-    const base = spreadPins(globePins, mobile ? 9.5 : 8.0, mobile ? 1.7 : 2.1);
+    const base = mobile
+      ? spreadPins(globePins, 13.2, 1.95, 1.25, 28)
+      : spreadPins(globePins, 8.0, 2.1, 0.55, 16);
     return base.map((p) => ({ ...p, __mobile: mobile }));
   }, [mobile, hint]);
 
