@@ -67,7 +67,7 @@ export default function GlobeChrome() {
             <img
               src="/images/chrome/desktop-slogan.png"
               alt="Truckers of the World, Unite!"
-              className="toda-title-img mx-auto block -mt-5 w-[min(100%,30rem)] h-auto"
+              className="toda-title-img mx-auto block -mt-10 w-[min(100%,30rem)] h-auto"
               width={720}
               height={175}
               draggable={false}
