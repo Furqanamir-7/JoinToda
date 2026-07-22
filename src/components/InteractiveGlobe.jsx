@@ -684,7 +684,7 @@ export default function InteractiveGlobe() {
         </div>
 
         {/* Mobile: zoom above the bottom headings */}
-        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[6.25rem] flex md:hidden flex-row items-center gap-4 z-40">
+        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[5rem] flex md:hidden flex-row items-center gap-4 z-40">
           <button
             type="button"
             onClick={() => zoomBy(ZOOM_STEP)}
@@ -717,7 +717,7 @@ export default function InteractiveGlobe() {
             <img
               src="/images/chrome/mobile-jointoda.png"
               alt="#JoinTODA — The Truckers Manifesto"
-              className="toda-title-img block w-[min(48vw,11.5rem)] h-auto"
+              className="toda-title-img block w-[min(38vw,9rem)] h-auto"
               width={397}
               height={128}
               draggable={false}
@@ -732,7 +732,7 @@ export default function InteractiveGlobe() {
               <img
                 src="/images/chrome/mobile-iunity.png"
                 alt="iUnity Download"
-                className="toda-title-img block w-[min(42vw,10rem)] h-auto"
+                className="toda-title-img block w-[min(30vw,7rem)] h-auto"
                 width={349}
                 height={178}
                 draggable={false}
