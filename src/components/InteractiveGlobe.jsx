@@ -152,6 +152,9 @@ function spreadEuropeCluster(pins, minSepDeg = 15) {
   }
   return out;
 }
+
+/** Fan chapter labels left / center / right so text uses empty gaps. */
+function assignLabelSides(pins) {
   const sorted = [...pins].sort(
     (a, b) => a.lng - b.lng || b.lat - a.lat || a.id.localeCompare(b.id)
   );
