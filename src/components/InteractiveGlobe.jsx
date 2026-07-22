@@ -18,6 +18,8 @@ const LABEL_COLOR = BRAND.label;
 const MARKER_SHOW_ALTITUDE = { mobile: 2.45, desktop: 2.2 };
 /** Altitude where logos reach full readable size (= max zoom-in). */
 const MARKER_FULL_ALTITUDE = { mobile: 1.35, desktop: 1.25 };
+/** Mobile logos grow larger on zoom-in than before. */
+const LOGO_SIZE = { mobileMax: 46, mobileMin: 9, desktopMax: 36, desktopMin: 10 };
 
 function isMobileViewport() {
   if (typeof window === 'undefined') return false;
@@ -44,8 +46,8 @@ function markerVisibilityForAltitude(altitude, mobile) {
     ? MARKER_FULL_ALTITUDE.mobile
     : MARKER_FULL_ALTITUDE.desktop;
   const alt = altitude ?? (mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop);
-  const maxLogo = mobile ? 32 : 36;
-  const minLogo = mobile ? 8 : 10;
+  const maxLogo = mobile ? LOGO_SIZE.mobileMax : LOGO_SIZE.desktopMax;
+  const minLogo = mobile ? LOGO_SIZE.mobileMin : LOGO_SIZE.desktopMin;
 
   if (alt > showBelow) {
     return {
@@ -109,7 +111,7 @@ function spreadPins(pins, minSepDeg, latBias = 1.85) {
  */
 function makeChapterMarkerEl(pin, onSelect) {
   const mobile = Boolean(pin?.__mobile);
-  const logoSize = mobile ? 32 : 36;
+  const logoSize = mobile ? LOGO_SIZE.mobileMax : LOGO_SIZE.desktopMax;
   const logoHalf = logoSize / 2;
 
   const wrap = document.createElement('div');
@@ -557,8 +559,8 @@ export default function InteractiveGlobe() {
 
   // Desktop: globe in right panel. Mobile: middle band — match WhatsApp reference framing.
   const DESKTOP_LEFT_FRAC = 0.38;
-  const mobileTopPx = Math.round(Math.max(size.height * 0.26, 188));
-  const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
+  const mobileTopPx = Math.round(Math.max(size.height * 0.28, 200));
+  const mobileBottomPx = Math.round(Math.max(size.height * 0.18, 120));
   const globeW = mobile
     ? size.width
     : Math.max(320, Math.round(size.width * (1 - DESKTOP_LEFT_FRAC)));
@@ -682,7 +684,7 @@ export default function InteractiveGlobe() {
         </div>
 
         {/* Mobile: zoom above the bottom headings */}
-        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[5.25rem] flex md:hidden flex-row items-center gap-4 z-40">
+        <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[6.25rem] flex md:hidden flex-row items-center gap-4 z-40">
           <button
             type="button"
             onClick={() => zoomBy(ZOOM_STEP)}
@@ -701,9 +703,9 @@ export default function InteractiveGlobe() {
           </button>
         </div>
 
-        {/* Mobile bottom — meow 2.png (#JoinTODA + Manifesto | iUnity Download) */}
+        {/* Mobile bottom — JoinTODA left + iUnity Download right */}
         <div
-          className="md:hidden absolute inset-x-0 z-50 px-2"
+          className="md:hidden absolute inset-x-0 z-50 px-3"
           style={{
             bottom: 0,
             paddingBottom:
@@ -711,23 +713,31 @@ export default function InteractiveGlobe() {
             paddingTop: '0.5rem',
           }}
         >
-          <div className="relative mx-auto w-[min(96vw,22.5rem)]">
+          <div className="flex items-end justify-between gap-3">
             <img
-              src="/images/meow-2.png"
-              alt="#JoinTODA — The Truckers Manifesto — iUnity Download"
-              className="toda-title-img mx-auto block w-full h-auto"
-              width={341}
-              height={64}
+              src="/images/chrome/mobile-jointoda.png"
+              alt="#JoinTODA — The Truckers Manifesto"
+              className="toda-title-img block w-[min(48vw,11.5rem)] h-auto"
+              width={397}
+              height={128}
               draggable={false}
             />
-            {/* Hit target over baked-in iUnity Download (right side) */}
             <a
               href="https://jointoda.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="pointer-events-auto absolute inset-y-0 right-0 w-[42%]"
+              className="pointer-events-auto shrink-0 hover:opacity-80"
               aria-label="iUnity Download"
-            />
+            >
+              <img
+                src="/images/chrome/mobile-iunity.png"
+                alt="iUnity Download"
+                className="toda-title-img block w-[min(42vw,10rem)] h-auto"
+                width={349}
+                height={178}
+                draggable={false}
+              />
+            </a>
           </div>
         </div>
       </div>

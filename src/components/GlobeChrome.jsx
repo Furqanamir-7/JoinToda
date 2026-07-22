@@ -1,51 +1,77 @@
 import { Link } from 'react-router-dom';
 
 /**
- * Brand chrome — baked PNGs for exact type/glow.
- * Mobile: meow.png (top) + meow-2.png (bottom, in InteractiveGlobe).
- * Desktop: toda-title-desktop.png (title), web.png (Resources), web-2.png (bottom left).
+ * Brand chrome — official PNG assets from Desktop/Mobile folders.
+ * Black plates knock out via .toda-title-img (mix-blend-mode: screen)
+ * so the live globe background shows through.
  */
 export default function GlobeChrome() {
   return (
     <>
       {/* —— Mobile top —— */}
-      <header className="md:hidden pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(0.25rem,env(safe-area-inset-top,0px))] px-2 pb-2">
-        <div className="relative mx-auto w-[min(96vw,22.5rem)]">
-          <h1 className="m-0 overflow-hidden">
-            <img
-              src="/images/meow.png"
-              alt="Truck Owners and Driver Association — Truckers of the World, Unite!"
-              className="toda-title-img mx-auto block w-full h-auto"
-              width={346}
-              height={178}
-              draggable={false}
-            />
-          </h1>
-          {/* Hit target over baked-in Resources (top-right of meow.png) */}
+      <header className="md:hidden pointer-events-none absolute inset-x-0 top-0 z-30 pt-[max(0.2rem,env(safe-area-inset-top,0px))] px-3 pb-2">
+        <div className="flex justify-end">
           <a
             href="https://jointoda.com/resources/"
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto absolute top-0 right-0 w-[38%] h-[22%]"
+            className="pointer-events-auto hover:opacity-80"
             aria-label="Resources"
+          >
+            <img
+              src="/images/chrome/mobile-resources.png"
+              alt="Resources"
+              className="toda-title-img block w-[5.75rem] h-auto"
+              width={233}
+              height={101}
+              draggable={false}
+            />
+          </a>
+        </div>
+        <div className="mt-0.5 text-center">
+          <h1 className="m-0">
+            <img
+              src="/images/chrome/mobile-toda.png"
+              alt="Truck Owners and Driver Association"
+              className="toda-title-img mx-auto block w-[min(94vw,23rem)] h-auto"
+              width={1016}
+              height={301}
+              draggable={false}
+            />
+          </h1>
+          <img
+            src="/images/chrome/mobile-slogan.png"
+            alt="Truckers of the World, Unite!"
+            className="toda-title-img mx-auto block mt-1 w-[min(88vw,20rem)] h-auto"
+            width={752}
+            height={157}
+            draggable={false}
           />
         </div>
       </header>
 
       {/* —— Desktop top —— */}
-      <header className="hidden md:block pointer-events-none absolute inset-x-0 top-0 z-30 pt-6 pl-10 pr-8">
+      <header className="hidden md:block pointer-events-none absolute inset-x-0 top-0 z-30 pt-5 pl-10 pr-8">
         <div className="flex items-start justify-between gap-6">
-          <div className="max-w-[min(40rem,42vw)] text-center pl-2">
-            <h1 className="m-0 overflow-hidden">
+          <div className="max-w-[min(42rem,44vw)] text-center pl-1">
+            <h1 className="m-0">
               <img
-                src="/images/toda-title-desktop.png"
-                alt="Truck Owners and Driver Association — Truckers of the World, Unite!"
+                src="/images/chrome/desktop-toda.png"
+                alt="Truck Owners and Driver Association"
                 className="toda-title-img mx-auto block w-full max-w-[34rem] h-auto"
-                width={781}
-                height={258}
+                width={925}
+                height={310}
                 draggable={false}
               />
             </h1>
+            <img
+              src="/images/chrome/desktop-slogan.png"
+              alt="Truckers of the World, Unite!"
+              className="toda-title-img mx-auto block mt-1 w-[min(100%,30rem)] h-auto"
+              width={720}
+              height={175}
+              draggable={false}
+            />
           </div>
           <a
             href="https://jointoda.com/resources/"
@@ -55,11 +81,11 @@ export default function GlobeChrome() {
             aria-label="Resources"
           >
             <img
-              src="/images/web.png"
+              src="/images/chrome/desktop-resources.png"
               alt="Resources"
-              className="toda-title-img block w-[7.5rem] h-auto"
-              width={148}
-              height={61}
+              className="toda-title-img block w-[7.25rem] h-auto"
+              width={255}
+              height={128}
               draggable={false}
             />
           </a>
@@ -68,13 +94,13 @@ export default function GlobeChrome() {
 
       {/* —— Desktop bottom —— */}
       <footer className="hidden md:flex pointer-events-none absolute inset-x-0 bottom-0 z-30 pb-6 px-8 items-end justify-between gap-6">
-        <div className="overflow-hidden">
+        <div>
           <img
-            src="/images/web-2.png"
+            src="/images/chrome/desktop-jointoda.png"
             alt="#JoinTODA — Declaration of Unity — The Truckers Manifesto"
-            className="toda-title-img block w-[min(26rem,38vw)] h-auto"
-            width={405}
-            height={121}
+            className="toda-title-img block w-[min(28rem,40vw)] h-auto"
+            width={539}
+            height={172}
             draggable={false}
           />
         </div>
