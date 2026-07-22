@@ -22,7 +22,7 @@ const MARKER_NEAR_ALTITUDE = { mobile: 0.55, desktop: 1.25 };
 /** Mobile: larger when zoomed out, shrink as you zoom in. Desktop: grow on zoom-in. */
 const LOGO_SIZE = {
   mobileFar: 30,
-  mobileNear: 12,
+  mobileNear: 18,
   mobileDot: 8,
   desktopMax: 36,
   desktopMin: 10,
