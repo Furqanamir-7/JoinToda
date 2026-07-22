@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Globe from 'react-globe.gl';
+import { TOUCH } from 'three';
 import { FiPlus, FiMinus, FiArrowRight, FiX } from 'react-icons/fi';
 import {
   globePins,
@@ -9,17 +10,23 @@ import {
 import { BRAND, brandColor } from '../data/brandTheme';
 import GlobeChrome from './GlobeChrome';
 
-const MIN_ALTITUDE = { mobile: 1.35, desktop: 1.2 };
+const MIN_ALTITUDE = { mobile: 0.55, desktop: 1.2 };
 /** Max zoom-out — keep globe large like the WhatsApp Pacific reference. */
 const MAX_ALTITUDE = { mobile: 2.35, desktop: 2.15 };
-const ZOOM_STEP = 0.35;
+const ZOOM_STEP = 0.28;
 const LABEL_COLOR = BRAND.label;
 /** Just above max zoom-out so dots always grow within the allowed range. */
 const MARKER_SHOW_ALTITUDE = { mobile: 2.45, desktop: 2.2 };
-/** Altitude where logos reach full readable size (= max zoom-in). */
-const MARKER_FULL_ALTITUDE = { mobile: 1.35, desktop: 1.25 };
-/** Mobile logos grow larger on zoom-in than before. */
-const LOGO_SIZE = { mobileMax: 40, mobileMin: 9, desktopMax: 36, desktopMin: 10 };
+/** Altitude where mobile logos are smallest (deep zoom-in clears clusters). */
+const MARKER_NEAR_ALTITUDE = { mobile: 0.55, desktop: 1.25 };
+/** Mobile: larger when zoomed out, shrink as you zoom in. Desktop: grow on zoom-in. */
+const LOGO_SIZE = {
+  mobileFar: 30,
+  mobileNear: 12,
+  mobileDot: 8,
+  desktopMax: 36,
+  desktopMin: 10,
+};
 
 function isMobileViewport() {
   if (typeof window === 'undefined') return false;
@@ -35,38 +42,50 @@ function latToPolar(lat) {
 }
 
 /**
- * Logos grow with zoom on both web and mobile:
- * tiny dots when zoomed out → large readable circles when zoomed in.
+ * Marker sizing by altitude:
+ * - Mobile: logos shrink as you zoom in so dense clusters clear.
+ * - Desktop: logos grow as you zoom in (readable at close range).
  */
 function markerVisibilityForAltitude(altitude, mobile) {
   const showBelow = mobile
     ? MARKER_SHOW_ALTITUDE.mobile
     : MARKER_SHOW_ALTITUDE.desktop;
-  const fullAt = mobile
-    ? MARKER_FULL_ALTITUDE.mobile
-    : MARKER_FULL_ALTITUDE.desktop;
+  const nearAt = mobile
+    ? MARKER_NEAR_ALTITUDE.mobile
+    : MARKER_NEAR_ALTITUDE.desktop;
   const alt = altitude ?? (mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop);
-  const maxLogo = mobile ? LOGO_SIZE.mobileMax : LOGO_SIZE.desktopMax;
-  const minLogo = mobile ? LOGO_SIZE.mobileMin : LOGO_SIZE.desktopMin;
 
   if (alt > showBelow) {
     return {
       logosVisible: true,
       scale: 1,
-      logoPx: minLogo,
+      logoPx: mobile ? LOGO_SIZE.mobileDot : LOGO_SIZE.desktopMin,
       fontPx: 0,
       showName: false,
     };
   }
 
-  const t = Math.min(1, Math.max(0, (showBelow - alt) / (showBelow - fullAt)));
-  const logoPx = Math.round(minLogo + t * (maxLogo - minLogo));
-  // Names visible on mobile + desktop once logos grow past tiny dots.
-  const fontPx =
-    t > 0.05
-      ? Math.round((mobile ? 7 : 7) + t * (mobile ? 4 : 3))
-      : 0;
+  const t = Math.min(1, Math.max(0, (showBelow - alt) / (showBelow - nearAt)));
 
+  if (mobile) {
+    // t=0 far → larger logos; t=1 near → smaller logos (clusters clear)
+    const logoPx = Math.round(
+      LOGO_SIZE.mobileFar - t * (LOGO_SIZE.mobileFar - LOGO_SIZE.mobileNear)
+    );
+    const fontPx = Math.round(6 + t * 5);
+    return {
+      logosVisible: true,
+      scale: 1,
+      logoPx,
+      fontPx,
+      showName: true,
+    };
+  }
+
+  const logoPx = Math.round(
+    LOGO_SIZE.desktopMin + t * (LOGO_SIZE.desktopMax - LOGO_SIZE.desktopMin)
+  );
+  const fontPx = t > 0.05 ? Math.round(7 + t * 3) : 0;
   return {
     logosVisible: true,
     scale: 1,
@@ -172,7 +191,7 @@ function assignLabelSides(pins) {
  */
 function makeChapterMarkerEl(pin, onSelect) {
   const mobile = Boolean(pin?.__mobile);
-  const logoSize = mobile ? LOGO_SIZE.mobileMax : LOGO_SIZE.desktopMax;
+  const logoSize = mobile ? LOGO_SIZE.mobileFar : LOGO_SIZE.desktopMax;
   const logoHalf = logoSize / 2;
 
   const wrap = document.createElement('div');
@@ -449,10 +468,16 @@ export default function InteractiveGlobe() {
       controls.autoRotate = true;
       controls.autoRotateSpeed = mobile ? 0.22 : 0.28;
       controls.enableZoom = true;
+      controls.zoomSpeed = mobile ? 1.35 : 1.0;
       controls.rotateSpeed = mobile ? 0.45 : 0.6;
-      controls.minDistance = mobile ? 250 : 220;
-      // Caps camera so you can’t pull back past the allowed frame
+      // Closer minDistance = deeper zoom-in (pins separate; logos shrink)
+      controls.minDistance = mobile ? 95 : 220;
       controls.maxDistance = mobile ? 340 : 315;
+      // One finger rotate, two-finger pinch zoom (dolly)
+      if (controls.touches) {
+        controls.touches.ONE = TOUCH.ROTATE;
+        controls.touches.TWO = TOUCH.DOLLY_PAN;
+      }
     } catch {
       /* ignore */
     }
@@ -643,7 +668,8 @@ export default function InteractiveGlobe() {
   return (
     <div
       ref={wrapperRef}
-      className="relative h-full w-full overflow-hidden bg-black touch-manipulation isolate"
+      className="relative h-full w-full overflow-hidden bg-black isolate"
+      style={{ touchAction: 'none' }}
     >
       <div
         className="globe-stage absolute z-0 overflow-hidden bg-black"

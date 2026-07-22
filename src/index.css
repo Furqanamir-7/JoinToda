@@ -179,6 +179,8 @@
   background: #000000 !important;
   outline: none;
   -webkit-tap-highlight-color: transparent;
+  /* Let OrbitControls own gestures: one-finger rotate, pinch zoom */
+  touch-action: none;
 }
 .globe-stage canvas {
   display: block;
