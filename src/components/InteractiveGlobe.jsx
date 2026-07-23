@@ -10,22 +10,27 @@ import {
 import { BRAND, brandColor } from '../data/brandTheme';
 import GlobeChrome from './GlobeChrome';
 
-const MIN_ALTITUDE = { mobile: 0.55, desktop: 1.2 };
-/** Max zoom-out — keep globe large like the WhatsApp Pacific reference. */
-const MAX_ALTITUDE = { mobile: 2.35, desktop: 2.15 };
-const ZOOM_STEP = 0.28;
+/**
+ * Two zoom levels only:
+ * 1x = default (cannot zoom out past this)
+ * 2x = one zoom-in step above 1x
+ * Lower altitude = closer camera.
+ */
+const ZOOM_1X = { mobile: 1.72, desktop: 1.85 };
+const ZOOM_2X = { mobile: 1.05, desktop: 1.2 };
+const MAX_ALTITUDE = ZOOM_1X;
+const MIN_ALTITUDE = ZOOM_2X;
 const LABEL_COLOR = BRAND.label;
-/** Just above max zoom-out so dots always grow within the allowed range. */
-const MARKER_SHOW_ALTITUDE = { mobile: 2.45, desktop: 2.2 };
-/** Altitude where mobile logos are smallest (deep zoom-in clears clusters). */
-const MARKER_NEAR_ALTITUDE = { mobile: 0.55, desktop: 1.25 };
-/** Mobile: larger when zoomed out, shrink as you zoom in. Desktop: grow on zoom-in. */
+/** Just above 1x so markers stay visible at the default frame. */
+const MARKER_SHOW_ALTITUDE = { mobile: 1.9, desktop: 2.0 };
+const MARKER_NEAR_ALTITUDE = ZOOM_2X;
+/** Mobile icons a bit larger; still shrink slightly at 2x so clusters clear. */
 const LOGO_SIZE = {
-  mobileFar: 30,
-  mobileNear: 18,
-  mobileDot: 8,
+  mobileFar: 34,
+  mobileNear: 24,
+  mobileDot: 10,
   desktopMax: 36,
-  desktopMin: 10,
+  desktopMin: 14,
 };
 
 function isMobileViewport() {
@@ -172,18 +177,9 @@ function spreadEuropeCluster(pins, minSepDeg = 15) {
   return out;
 }
 
-/** Fan chapter labels left / center / right so text uses empty gaps. */
-function assignLabelSides(pins) {
-  const sorted = [...pins].sort(
-    (a, b) => a.lng - b.lng || b.lat - a.lat || a.id.localeCompare(b.id)
-  );
-  const sideById = new Map();
-  sorted.forEach((p, idx) => {
-    // L / R / C pattern spreads text into open space beside logos
-    const side = idx % 3 === 0 ? -1 : idx % 3 === 1 ? 1 : 0;
-    sideById.set(p.id, side);
-  });
-  return pins.map((p) => ({ ...p, __labelSide: sideById.get(p.id) ?? 0 }));
+/** Labels stay centered under logos (no left/right fan). */
+function withMobileFlag(pins, mobile) {
+  return pins.map((p) => ({ ...p, __mobile: mobile, __labelSide: 0 }));
 }
 
 /**
@@ -265,6 +261,7 @@ function makeChapterMarkerEl(pin, onSelect) {
     'pointer-events:none',
     'cursor:pointer',
     'opacity:0',
+    'text-align:center',
   ].join(';');
 
   if (pin.rtl) {
@@ -281,7 +278,7 @@ function makeChapterMarkerEl(pin, onSelect) {
     const row = document.createElement('div');
     row.textContent = text;
     row.style.cssText =
-      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;';
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center';
     nameBox.appendChild(row);
   });
 
@@ -320,21 +317,19 @@ function syncMarkerScales(root, altitude, mobile) {
       }
       if (name) {
         if (showName && fontPx > 0) {
-          const side = Number(el.dataset.labelSide) || 0;
-          const ox = mobile ? side * Math.round(logoPx * 0.95 + 14) : 0;
           name.style.marginTop = mobile ? '3px' : '5px';
           name.style.fontSize = `${fontPx}px`;
           name.style.opacity = '1';
           name.style.pointerEvents = 'auto';
-          name.style.transform = ox ? `translateX(${ox}px)` : '';
-          name.style.textAlign =
-            side < 0 ? 'right' : side > 0 ? 'left' : 'center';
+          name.style.transform = '';
+          name.style.textAlign = 'center';
         } else {
           name.style.marginTop = '0';
           name.style.fontSize = '0px';
           name.style.opacity = '0';
           name.style.pointerEvents = 'none';
           name.style.transform = '';
+          name.style.textAlign = 'center';
         }
       }
     } else {
@@ -470,9 +465,9 @@ export default function InteractiveGlobe() {
       controls.enableZoom = true;
       controls.zoomSpeed = mobile ? 1.35 : 1.0;
       controls.rotateSpeed = mobile ? 0.45 : 0.6;
-      // Closer minDistance = deeper zoom-in (pins separate; logos shrink)
-      controls.minDistance = mobile ? 95 : 220;
-      controls.maxDistance = mobile ? 340 : 315;
+      // Bound camera to 1x (default) ↔ 2x (one zoom-in)
+      controls.minDistance = mobile ? 160 : 205;
+      controls.maxDistance = mobile ? 265 : 285;
       // One finger rotate, two-finger pinch zoom (dolly)
       if (controls.touches) {
         controls.touches.ONE = TOUCH.ROTATE;
@@ -548,10 +543,8 @@ export default function InteractiveGlobe() {
       const pov = globe.pointOfView();
       const minAlt = mobile ? MIN_ALTITUDE.mobile : MIN_ALTITUDE.desktop;
       const maxAlt = mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop;
-      const altitude = Math.min(
-        maxAlt,
-        Math.max(minAlt, (pov.altitude || 2) + delta)
-      );
+      // Only two levels: −delta → 2x zoom-in, +delta → 1x default
+      const altitude = delta < 0 ? minAlt : maxAlt;
       const { minLat, maxLat } = associationLatBounds;
       const lat = Math.min(maxLat, Math.max(minLat, pov.lat ?? 18));
       globe.pointOfView({ ...pov, lat, altitude }, 320);
@@ -583,11 +576,12 @@ export default function InteractiveGlobe() {
 
   const htmlData = useMemo(() => {
     if (hint) return [];
+    // Slightly less aggressive spread so 1x can overlap a bit; 2x still clears.
     let base = mobile
-      ? spreadPins(globePins, 17.5, 2.25, 1.75, 46)
+      ? spreadPins(globePins, 14.0, 2.1, 1.55, 36)
       : spreadPins(globePins, 8.0, 2.1, 0.55, 16);
-    if (mobile) base = spreadEuropeCluster(base, 16.5);
-    return assignLabelSides(base).map((p) => ({ ...p, __mobile: mobile }));
+    if (mobile) base = spreadEuropeCluster(base, 13.5);
+    return withMobileFlag(base, mobile);
   }, [mobile, hint]);
 
   const makeLabelEl = useCallback(
@@ -764,7 +758,7 @@ export default function InteractiveGlobe() {
         <div className="pointer-events-auto absolute top-1/2 -translate-y-1/2 right-3 sm:right-6 hidden md:flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => zoomBy(-ZOOM_STEP)}
+            onClick={() => zoomBy(-1)}
             aria-label="Zoom in"
             className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/70 active:bg-white/30 border border-white/20 text-white flex items-center justify-center shadow-lg"
           >
@@ -772,7 +766,7 @@ export default function InteractiveGlobe() {
           </button>
           <button
             type="button"
-            onClick={() => zoomBy(ZOOM_STEP)}
+            onClick={() => zoomBy(1)}
             aria-label="Zoom out"
             className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/70 active:bg-white/30 border border-white/20 text-white flex items-center justify-center shadow-lg"
           >
@@ -784,7 +778,7 @@ export default function InteractiveGlobe() {
         <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 bottom-[5rem] flex md:hidden flex-row items-center gap-4 z-40">
           <button
             type="button"
-            onClick={() => zoomBy(ZOOM_STEP)}
+            onClick={() => zoomBy(1)}
             aria-label="Zoom out"
             className="w-11 h-11 rounded-full bg-black/70 active:bg-white/30 border border-white/20 text-white flex items-center justify-center shadow-lg"
           >
@@ -792,7 +786,7 @@ export default function InteractiveGlobe() {
           </button>
           <button
             type="button"
-            onClick={() => zoomBy(-ZOOM_STEP)}
+            onClick={() => zoomBy(-1)}
             aria-label="Zoom in"
             className="w-11 h-11 rounded-full bg-black/70 active:bg-white/30 border border-white/20 text-white flex items-center justify-center shadow-lg"
           >
