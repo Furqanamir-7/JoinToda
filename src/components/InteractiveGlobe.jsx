@@ -47,56 +47,30 @@ function latToPolar(lat) {
 }
 
 /**
- * Marker sizing by altitude:
- * - Mobile: logos shrink as you zoom in so dense clusters clear.
- * - Desktop: logos grow as you zoom in (readable at close range).
+ * Marker sizing — discrete 1x / 2x sizes (no per-frame resize during zoom animation).
  */
 function markerVisibilityForAltitude(altitude, mobile) {
-  const showBelow = mobile
-    ? MARKER_SHOW_ALTITUDE.mobile
-    : MARKER_SHOW_ALTITUDE.desktop;
-  const nearAt = mobile
-    ? MARKER_NEAR_ALTITUDE.mobile
-    : MARKER_NEAR_ALTITUDE.desktop;
-  const alt = altitude ?? (mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop);
-
-  if (alt > showBelow) {
-    return {
-      logosVisible: true,
-      scale: 1,
-      logoPx: mobile ? LOGO_SIZE.mobileDot : LOGO_SIZE.desktopMin,
-      fontPx: 0,
-      showName: false,
-    };
-  }
-
-  const t = Math.min(1, Math.max(0, (showBelow - alt) / (showBelow - nearAt)));
+  const maxAlt = mobile ? ZOOM_1X.mobile : ZOOM_1X.desktop;
+  const minAlt = mobile ? ZOOM_2X.mobile : ZOOM_2X.desktop;
+  const alt = altitude ?? maxAlt;
+  const zoomedIn = alt < (maxAlt + minAlt) / 2;
 
   if (mobile) {
-    // t=0 far → larger logos; t=1 near → smaller logos (clusters clear)
-    const logoPx = Math.round(
-      LOGO_SIZE.mobileFar - t * (LOGO_SIZE.mobileFar - LOGO_SIZE.mobileNear)
-    );
-    const fontPx = Math.round(6 + t * 5);
     return {
       logosVisible: true,
       scale: 1,
-      logoPx,
-      fontPx,
+      logoPx: zoomedIn ? LOGO_SIZE.mobileNear : LOGO_SIZE.mobileFar,
+      fontPx: zoomedIn ? 10 : 7,
       showName: true,
     };
   }
 
-  const logoPx = Math.round(
-    LOGO_SIZE.desktopMin + t * (LOGO_SIZE.desktopMax - LOGO_SIZE.desktopMin)
-  );
-  const fontPx = t > 0.05 ? Math.round(7 + t * 3) : 0;
   return {
     logosVisible: true,
     scale: 1,
-    logoPx,
-    fontPx,
-    showName: fontPx > 0,
+    logoPx: zoomedIn ? LOGO_SIZE.desktopMax : LOGO_SIZE.desktopMin + 8,
+    fontPx: zoomedIn ? 10 : 8,
+    showName: true,
   };
 }
 
@@ -395,9 +369,6 @@ export default function InteractiveGlobe() {
     height: typeof window !== 'undefined' ? window.innerHeight : 800,
   }));
   const [hint, setHint] = useState(null);
-  const [altitude, setAltitude] = useState(() =>
-    isMobileViewport() ? ZOOM_1X.mobile : ZOOM_1X.desktop
-  );
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -478,7 +449,6 @@ export default function InteractiveGlobe() {
           ? MIN_ALTITUDE.mobile
           : MIN_ALTITUDE.desktop;
         globe.pointOfView({ lat: pin.lat, lng: pin.lng, altitude: alt }, 650);
-        setAltitude(alt);
       } catch {
         /* ignore */
       }
@@ -544,7 +514,6 @@ export default function InteractiveGlobe() {
     const startLat = mobile ? 5 : 20;
     const startLng = mobile ? 165 : -30;
     globe.pointOfView({ lat: startLat, lng: startLng, altitude: startAlt }, 0);
-    setAltitude(startAlt);
     syncMarkerScales(wrapperRef.current, startAlt, mobile);
   }, [mobile]);
 
@@ -565,7 +534,6 @@ export default function InteractiveGlobe() {
             /* ignore */
           }
         }
-        setAltitude(alt);
       }
       syncMarkerScales(wrapperRef.current, alt, mobile);
     },
@@ -581,12 +549,13 @@ export default function InteractiveGlobe() {
       const maxAlt = mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop;
       // Only two levels: −delta → 2x zoom-in, +delta → 1x default
       const nextAlt = delta < 0 ? minAlt : maxAlt;
+      // Already at that level — no-op (avoids pointless POV animation / flicker)
+      if (Math.abs((pov.altitude ?? maxAlt) - nextAlt) < 0.02) return;
       const { minLat, maxLat } = associationLatBounds;
       const lat = Math.min(maxLat, Math.max(minLat, pov.lat ?? 18));
       globe.pointOfView({ ...pov, lat, altitude: nextAlt }, 320);
-      setAltitude(nextAlt);
 
-      // Keep logos in sync during the animated zoom
+      // Keep logos in sync during the animated zoom (no React state — no remount)
       let frames = 0;
       const tick = () => {
         try {
@@ -685,32 +654,15 @@ export default function InteractiveGlobe() {
     ? (hint.labelLines?.length ? hint.labelLines : [hint.name]).slice(0, 2)
     : [];
 
-  // Desktop: globe in right panel.
-  // Mobile: keep WebGL canvas size FIXED (avoids zoom glitches). Overlap is a CSS
-  // translate only — at 1x the stage is shifted down; at 2x it rises under the header.
+  // Desktop: globe in right panel. Mobile: fixed default framing (no layout shift on zoom).
   const DESKTOP_LEFT_FRAC = 0.38;
-  const mobileTopRest = Math.round(Math.max(size.height * 0.28, 200));
-  const mobileTopZoomed = Math.round(Math.max(size.height * 0.12, 88));
+  const mobileTopPx = Math.round(Math.max(size.height * 0.28, 200));
   const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
-  const mobileZoomT = mobile
-    ? Math.min(
-        1,
-        Math.max(
-          0,
-          (ZOOM_1X.mobile - altitude) / (ZOOM_1X.mobile - ZOOM_2X.mobile)
-        )
-      )
-    : 0;
-  // Always allocate the taller stage; shift it down at 1x so default framing is unchanged.
-  const mobileTopPx = mobileTopZoomed;
-  const mobileShiftY = Math.round(
-    (mobileTopRest - mobileTopZoomed) * (1 - mobileZoomT)
-  );
   const globeW = mobile
     ? size.width
     : Math.max(320, Math.round(size.width * (1 - DESKTOP_LEFT_FRAC)));
   const globeH = mobile
-    ? Math.max(300, size.height - mobileTopZoomed - mobileBottomPx)
+    ? Math.max(260, size.height - mobileTopPx - mobileBottomPx)
     : size.height;
   const desktopLeftPx = mobile ? 0 : Math.round(size.width - globeW);
 
@@ -731,9 +683,6 @@ export default function InteractiveGlobe() {
                 right: 0,
                 width: globeW,
                 height: globeH,
-                transform: `translate3d(0, ${mobileShiftY}px, 0)`,
-                transition: 'transform 320ms ease-out',
-                willChange: 'transform',
               }
             : {
                 top: 0,
@@ -784,20 +733,15 @@ export default function InteractiveGlobe() {
         />
       )}
 
-      {/* Mobile: soft text safe zones — stronger top fade at 1x; globe peeks under titles at 2x */}
+      {/* Mobile: soft text safe zones (fixed — no zoom-linked layout) */}
       {mobile && (
         <>
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-[40]"
             style={{
-              height: Math.round(
-                mobileTopRest - (mobileTopRest - mobileTopZoomed) * mobileZoomT * 0.45
-              ),
+              height: mobileTopPx + 28,
               background:
-                mobileZoomT > 0.55
-                  ? 'linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0.75) 68%, transparent 100%)'
-                  : 'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
-              transition: 'height 320ms ease-out',
+                'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
             }}
             aria-hidden
           />
