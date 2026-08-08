@@ -26,10 +26,10 @@ const MARKER_SHOW_ALTITUDE = { mobile: 1.9, desktop: 2.0 };
 const MARKER_NEAR_ALTITUDE = ZOOM_2X;
 /** Mobile icons a bit larger; still shrink slightly at 2x so clusters clear. */
 const LOGO_SIZE = {
-  mobileFar: 34,
-  mobileNear: 24,
+  mobileFar: 30,
+  mobileNear: 22,
   mobileDot: 10,
-  desktopMax: 36,
+  desktopMax: 30,
   desktopMin: 14,
 };
 
@@ -171,6 +171,36 @@ function spreadEuropeCluster(pins, minSepDeg = 15) {
         out[i].lng -= dlng * push * 2.0;
         out[j].lat += dlat * push * 2.4;
         out[j].lng += dlng * push * 2.0;
+      }
+    }
+  }
+  return out;
+}
+
+/** Extra repulsion for dense North America band. */
+function spreadAmericasCluster(pins, minSepDeg = 15) {
+  const out = pins.map((p) => ({ ...p }));
+  const inBand = (p) =>
+    p.lng >= -140 && p.lng <= -55 && p.lat >= 10 && p.lat <= 72;
+  for (let iter = 0; iter < 40; iter++) {
+    for (let i = 0; i < out.length; i++) {
+      if (!inBand(out[i])) continue;
+      for (let j = i + 1; j < out.length; j++) {
+        if (!inBand(out[j])) continue;
+        let dlat = out[j].lat - out[i].lat;
+        let dlng = out[j].lng - out[i].lng;
+        if (dlng > 180) dlng -= 360;
+        if (dlng < -180) dlng += 360;
+        if (Math.abs(dlng) < 1.0) {
+          dlng = ((i + j) % 2 === 0 ? -1 : 1) * 1.6;
+        }
+        const dist = Math.hypot(dlat * 2.5, dlng * 2.2);
+        if (dist >= minSepDeg || dist < 0.001) continue;
+        const push = ((minSepDeg - dist) / 2 / dist) * 0.92;
+        out[i].lat -= dlat * push * 2.5;
+        out[i].lng -= dlng * push * 2.2;
+        out[j].lat += dlat * push * 2.5;
+        out[j].lng += dlng * push * 2.2;
       }
     }
   }
@@ -576,11 +606,12 @@ export default function InteractiveGlobe() {
 
   const htmlData = useMemo(() => {
     if (hint) return [];
-    // Slightly less aggressive spread so 1x can overlap a bit; 2x still clears.
+    // Stronger separation on both views so labels stay readable at 1x.
     let base = mobile
-      ? spreadPins(globePins, 14.0, 2.1, 1.55, 36)
-      : spreadPins(globePins, 8.0, 2.1, 0.55, 16);
-    if (mobile) base = spreadEuropeCluster(base, 13.5);
+      ? spreadPins(globePins, 16.5, 2.25, 1.75, 42)
+      : spreadPins(globePins, 14.5, 2.2, 1.45, 36);
+    base = spreadAmericasCluster(base, mobile ? 16.0 : 15.0);
+    base = spreadEuropeCluster(base, mobile ? 15.0 : 14.0);
     return withMobileFlag(base, mobile);
   }, [mobile, hint]);
 
