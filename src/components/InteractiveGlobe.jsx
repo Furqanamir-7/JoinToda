@@ -656,15 +656,15 @@ export default function InteractiveGlobe() {
     : [];
 
   // Desktop: globe in right panel.
-  // Mobile: fixed stage under the chrome — title overlaps the globe; zoom never moves layout.
+  // Mobile: keep the original small default frame — zoom only changes camera, never layout.
   const DESKTOP_LEFT_FRAC = 0.38;
-  const mobileTopPx = Math.round(Math.max(size.height * 0.06, 36));
-  const mobileBottomPx = Math.round(Math.max(size.height * 0.14, 100));
+  const mobileTopPx = Math.round(Math.max(size.height * 0.28, 200));
+  const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
   const globeW = mobile
     ? size.width
     : Math.max(320, Math.round(size.width * (1 - DESKTOP_LEFT_FRAC)));
   const globeH = mobile
-    ? Math.max(320, size.height - mobileTopPx - mobileBottomPx)
+    ? Math.max(260, size.height - mobileTopPx - mobileBottomPx)
     : size.height;
   const desktopLeftPx = mobile ? 0 : Math.round(size.width - globeW);
 
@@ -735,15 +735,15 @@ export default function InteractiveGlobe() {
         />
       )}
 
-      {/* Mobile: light fades so chrome stays readable while globe sits underneath */}
+      {/* Mobile: soft text safe zones (fixed — same as default small frame) */}
       {mobile && (
         <>
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-[40]"
             style={{
-              height: Math.round(Math.max(size.height * 0.2, 140)),
+              height: mobileTopPx + 28,
               background:
-                'linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, transparent 100%)',
+                'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
             }}
             aria-hidden
           />
