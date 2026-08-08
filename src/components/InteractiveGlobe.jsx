@@ -361,6 +361,8 @@ function syncMarkerScales(root, altitude, mobile) {
 export default function InteractiveGlobe() {
   const globeRef = useRef(null);
   const wrapperRef = useRef(null);
+  const stageRef = useRef(null);
+  const topFadeRef = useRef(null);
   const hintTimerRef = useRef(null);
   const onSelectRef = useRef(null);
   const [mobile, setMobile] = useState(() => isMobileViewport());
@@ -369,6 +371,42 @@ export default function InteractiveGlobe() {
     height: typeof window !== 'undefined' ? window.innerHeight : 800,
   }));
   const [hint, setHint] = useState(null);
+
+  /** Slide globe up under the header on zoom-in — DOM only, no React re-render. */
+  const applyMobileTopOverlap = useCallback((alt) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (!isMobileViewport()) {
+      stage.style.transform = 'translate3d(0, 0, 0)';
+      if (topFadeRef.current) {
+        topFadeRef.current.style.height = '';
+      }
+      return;
+    }
+    const maxAlt = ZOOM_1X.mobile;
+    const minAlt = ZOOM_2X.mobile;
+    const t = Math.min(
+      1,
+      Math.max(0, (maxAlt - (alt ?? maxAlt)) / (maxAlt - minAlt))
+    );
+    // ~14% of viewport, capped — enough to tuck under titles when zoomed in
+    const maxShift = Math.round(
+      Math.min(Math.max(window.innerHeight * 0.14, 96), 140)
+    );
+    const shift = Math.round(t * maxShift);
+    stage.style.transform = `translate3d(0, ${-shift}px, 0)`;
+
+    const fade = topFadeRef.current;
+    if (fade) {
+      const restH = Math.round(Math.max(window.innerHeight * 0.28, 200) + 28);
+      const zoomH = Math.round(Math.max(window.innerHeight * 0.16, 110));
+      fade.style.height = `${Math.round(restH + (zoomH - restH) * t)}px`;
+      fade.style.background =
+        t > 0.55
+          ? 'linear-gradient(180deg, #000 0%, #000 40%, rgba(0,0,0,0.7) 70%, transparent 100%)'
+          : 'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)';
+    }
+  }, []);
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -449,11 +487,12 @@ export default function InteractiveGlobe() {
           ? MIN_ALTITUDE.mobile
           : MIN_ALTITUDE.desktop;
         globe.pointOfView({ lat: pin.lat, lng: pin.lng, altitude: alt }, 650);
+        applyMobileTopOverlap(alt);
       } catch {
         /* ignore */
       }
     }
-  }, []);
+  }, [applyMobileTopOverlap]);
 
   onSelectRef.current = handlePinClick;
 
@@ -509,13 +548,14 @@ export default function InteractiveGlobe() {
       /* ignore */
     }
 
-    // Open at max zoom-out — Pacific frame (matches WhatsApp reference)
+    // Open at 1x default — Pacific frame
     const startAlt = mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop;
     const startLat = mobile ? 5 : 20;
     const startLng = mobile ? 165 : -30;
     globe.pointOfView({ lat: startLat, lng: startLng, altitude: startAlt }, 0);
     syncMarkerScales(wrapperRef.current, startAlt, mobile);
-  }, [mobile]);
+    applyMobileTopOverlap(startAlt);
+  }, [mobile, applyMobileTopOverlap]);
 
   const onZoom = useCallback(
     (pov) => {
@@ -534,10 +574,11 @@ export default function InteractiveGlobe() {
             /* ignore */
           }
         }
+        applyMobileTopOverlap(alt);
       }
       syncMarkerScales(wrapperRef.current, alt, mobile);
     },
-    [mobile]
+    [mobile, applyMobileTopOverlap]
   );
 
   const zoomBy = useCallback(
@@ -554,16 +595,15 @@ export default function InteractiveGlobe() {
       const { minLat, maxLat } = associationLatBounds;
       const lat = Math.min(maxLat, Math.max(minLat, pov.lat ?? 18));
       globe.pointOfView({ ...pov, lat, altitude: nextAlt }, 320);
+      applyMobileTopOverlap(nextAlt);
 
       // Keep logos in sync during the animated zoom (no React state — no remount)
       let frames = 0;
       const tick = () => {
         try {
-          syncMarkerScales(
-            wrapperRef.current,
-            globe.pointOfView().altitude,
-            mobile
-          );
+          const a = globe.pointOfView().altitude;
+          syncMarkerScales(wrapperRef.current, a, mobile);
+          applyMobileTopOverlap(a);
         } catch {
           /* ignore */
         }
@@ -572,7 +612,7 @@ export default function InteractiveGlobe() {
       };
       requestAnimationFrame(tick);
     },
-    [mobile]
+    [mobile, applyMobileTopOverlap]
   );
 
   const clearHint = useCallback(() => {
@@ -673,6 +713,7 @@ export default function InteractiveGlobe() {
       style={{ touchAction: 'none' }}
     >
       <div
+        ref={stageRef}
         className="globe-stage absolute z-0 overflow-hidden bg-black"
         style={
           mobile
@@ -683,6 +724,9 @@ export default function InteractiveGlobe() {
                 right: 0,
                 width: globeW,
                 height: globeH,
+                transform: 'translate3d(0, 0, 0)',
+                transition: 'transform 320ms ease-out',
+                willChange: 'transform',
               }
             : {
                 top: 0,
@@ -733,15 +777,17 @@ export default function InteractiveGlobe() {
         />
       )}
 
-      {/* Mobile: soft text safe zones (fixed — no zoom-linked layout) */}
+      {/* Mobile: soft text safe zones — fade height tweaked via ref when zooming */}
       {mobile && (
         <>
           <div
+            ref={topFadeRef}
             className="pointer-events-none absolute inset-x-0 top-0 z-[40]"
             style={{
               height: mobileTopPx + 28,
               background:
                 'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
+              transition: 'height 320ms ease-out',
             }}
             aria-hidden
           />
