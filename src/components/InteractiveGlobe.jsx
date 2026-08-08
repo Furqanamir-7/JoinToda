@@ -686,10 +686,12 @@ export default function InteractiveGlobe() {
     : [];
 
   // Desktop: globe in right panel.
-  // Mobile: keep default (1x) globe size; only raise under the header when zoomed in (2x).
+  // Mobile: keep WebGL canvas size FIXED (avoids zoom glitches). Overlap is a CSS
+  // translate only — at 1x the stage is shifted down; at 2x it rises under the header.
   const DESKTOP_LEFT_FRAC = 0.38;
   const mobileTopRest = Math.round(Math.max(size.height * 0.28, 200));
   const mobileTopZoomed = Math.round(Math.max(size.height * 0.12, 88));
+  const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
   const mobileZoomT = mobile
     ? Math.min(
         1,
@@ -699,15 +701,16 @@ export default function InteractiveGlobe() {
         )
       )
     : 0;
-  const mobileTopPx = Math.round(
-    mobileTopRest + (mobileTopZoomed - mobileTopRest) * mobileZoomT
+  // Always allocate the taller stage; shift it down at 1x so default framing is unchanged.
+  const mobileTopPx = mobileTopZoomed;
+  const mobileShiftY = Math.round(
+    (mobileTopRest - mobileTopZoomed) * (1 - mobileZoomT)
   );
-  const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
   const globeW = mobile
     ? size.width
     : Math.max(320, Math.round(size.width * (1 - DESKTOP_LEFT_FRAC)));
   const globeH = mobile
-    ? Math.max(260, size.height - mobileTopPx - mobileBottomPx)
+    ? Math.max(300, size.height - mobileTopZoomed - mobileBottomPx)
     : size.height;
   const desktopLeftPx = mobile ? 0 : Math.round(size.width - globeW);
 
@@ -728,6 +731,9 @@ export default function InteractiveGlobe() {
                 right: 0,
                 width: globeW,
                 height: globeH,
+                transform: `translate3d(0, ${mobileShiftY}px, 0)`,
+                transition: 'transform 320ms ease-out',
+                willChange: 'transform',
               }
             : {
                 top: 0,
@@ -785,12 +791,13 @@ export default function InteractiveGlobe() {
             className="pointer-events-none absolute inset-x-0 top-0 z-[40]"
             style={{
               height: Math.round(
-                mobileTopRest + (mobileTopPx - mobileTopRest) * 0.35 + 28
+                mobileTopRest - (mobileTopRest - mobileTopZoomed) * mobileZoomT * 0.45
               ),
               background:
                 mobileZoomT > 0.55
                   ? 'linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0.75) 68%, transparent 100%)'
                   : 'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
+              transition: 'height 320ms ease-out',
             }}
             aria-hidden
           />
