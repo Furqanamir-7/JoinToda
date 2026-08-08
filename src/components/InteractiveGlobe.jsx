@@ -395,6 +395,9 @@ export default function InteractiveGlobe() {
     height: typeof window !== 'undefined' ? window.innerHeight : 800,
   }));
   const [hint, setHint] = useState(null);
+  const [altitude, setAltitude] = useState(() =>
+    isMobileViewport() ? ZOOM_1X.mobile : ZOOM_1X.desktop
+  );
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -475,6 +478,7 @@ export default function InteractiveGlobe() {
           ? MIN_ALTITUDE.mobile
           : MIN_ALTITUDE.desktop;
         globe.pointOfView({ lat: pin.lat, lng: pin.lng, altitude: alt }, 650);
+        setAltitude(alt);
       } catch {
         /* ignore */
       }
@@ -540,6 +544,7 @@ export default function InteractiveGlobe() {
     const startLat = mobile ? 5 : 20;
     const startLng = mobile ? 165 : -30;
     globe.pointOfView({ lat: startLat, lng: startLng, altitude: startAlt }, 0);
+    setAltitude(startAlt);
     syncMarkerScales(wrapperRef.current, startAlt, mobile);
   }, [mobile]);
 
@@ -560,6 +565,7 @@ export default function InteractiveGlobe() {
             /* ignore */
           }
         }
+        setAltitude(alt);
       }
       syncMarkerScales(wrapperRef.current, alt, mobile);
     },
@@ -574,10 +580,11 @@ export default function InteractiveGlobe() {
       const minAlt = mobile ? MIN_ALTITUDE.mobile : MIN_ALTITUDE.desktop;
       const maxAlt = mobile ? MAX_ALTITUDE.mobile : MAX_ALTITUDE.desktop;
       // Only two levels: −delta → 2x zoom-in, +delta → 1x default
-      const altitude = delta < 0 ? minAlt : maxAlt;
+      const nextAlt = delta < 0 ? minAlt : maxAlt;
       const { minLat, maxLat } = associationLatBounds;
       const lat = Math.min(maxLat, Math.max(minLat, pov.lat ?? 18));
-      globe.pointOfView({ ...pov, lat, altitude }, 320);
+      globe.pointOfView({ ...pov, lat, altitude: nextAlt }, 320);
+      setAltitude(nextAlt);
 
       // Keep logos in sync during the animated zoom
       let frames = 0;
@@ -679,15 +686,28 @@ export default function InteractiveGlobe() {
     : [];
 
   // Desktop: globe in right panel.
-  // Mobile: globe overlaps under the top chrome (titles sit above a soft fade).
+  // Mobile: keep default (1x) globe size; only raise under the header when zoomed in (2x).
   const DESKTOP_LEFT_FRAC = 0.38;
-  const mobileTopPx = Math.round(Math.max(size.height * 0.12, 88));
+  const mobileTopRest = Math.round(Math.max(size.height * 0.28, 200));
+  const mobileTopZoomed = Math.round(Math.max(size.height * 0.12, 88));
+  const mobileZoomT = mobile
+    ? Math.min(
+        1,
+        Math.max(
+          0,
+          (ZOOM_1X.mobile - altitude) / (ZOOM_1X.mobile - ZOOM_2X.mobile)
+        )
+      )
+    : 0;
+  const mobileTopPx = Math.round(
+    mobileTopRest + (mobileTopZoomed - mobileTopRest) * mobileZoomT
+  );
   const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
   const globeW = mobile
     ? size.width
     : Math.max(320, Math.round(size.width * (1 - DESKTOP_LEFT_FRAC)));
   const globeH = mobile
-    ? Math.max(300, size.height - mobileTopPx - mobileBottomPx)
+    ? Math.max(260, size.height - mobileTopPx - mobileBottomPx)
     : size.height;
   const desktopLeftPx = mobile ? 0 : Math.round(size.width - globeW);
 
@@ -758,15 +778,19 @@ export default function InteractiveGlobe() {
         />
       )}
 
-      {/* Mobile: soft text safe zones — globe peeks under titles from the top */}
+      {/* Mobile: soft text safe zones — stronger top fade at 1x; globe peeks under titles at 2x */}
       {mobile && (
         <>
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-[40]"
             style={{
-              height: Math.round(size.height * 0.26),
+              height: Math.round(
+                mobileTopRest + (mobileTopPx - mobileTopRest) * 0.35 + 28
+              ),
               background:
-                'linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0.75) 68%, transparent 100%)',
+                mobileZoomT > 0.55
+                  ? 'linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0.75) 68%, transparent 100%)'
+                  : 'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
             }}
             aria-hidden
           />
