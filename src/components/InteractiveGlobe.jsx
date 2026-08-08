@@ -678,15 +678,16 @@ export default function InteractiveGlobe() {
     ? (hint.labelLines?.length ? hint.labelLines : [hint.name]).slice(0, 2)
     : [];
 
-  // Desktop: globe in right panel. Mobile: middle band — match WhatsApp reference framing.
+  // Desktop: globe in right panel.
+  // Mobile: globe overlaps under the top chrome (titles sit above a soft fade).
   const DESKTOP_LEFT_FRAC = 0.38;
-  const mobileTopPx = Math.round(Math.max(size.height * 0.28, 200));
-  const mobileBottomPx = Math.round(Math.max(size.height * 0.18, 120));
+  const mobileTopPx = Math.round(Math.max(size.height * 0.12, 88));
+  const mobileBottomPx = Math.round(Math.max(size.height * 0.16, 110));
   const globeW = mobile
     ? size.width
     : Math.max(320, Math.round(size.width * (1 - DESKTOP_LEFT_FRAC)));
   const globeH = mobile
-    ? Math.max(260, size.height - mobileTopPx - mobileBottomPx)
+    ? Math.max(300, size.height - mobileTopPx - mobileBottomPx)
     : size.height;
   const desktopLeftPx = mobile ? 0 : Math.round(size.width - globeW);
 
@@ -757,15 +758,15 @@ export default function InteractiveGlobe() {
         />
       )}
 
-      {/* Mobile: soft text safe zones (no hard grey edge lines) */}
+      {/* Mobile: soft text safe zones — globe peeks under titles from the top */}
       {mobile && (
         <>
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-[40]"
             style={{
-              height: mobileTopPx + 28,
+              height: Math.round(size.height * 0.26),
               background:
-                'linear-gradient(180deg, #000 0%, #000 72%, transparent 100%)',
+                'linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0.75) 68%, transparent 100%)',
             }}
             aria-hidden
           />
